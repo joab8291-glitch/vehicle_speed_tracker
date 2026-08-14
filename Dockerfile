@@ -16,7 +16,6 @@ COPY config.yaml /app/config.yaml
 COPY vehicle_speed_tracker.py .
 COPY calibrate_points.py .
 COPY bytetrack_custom.yaml .
-COPY config.example.yaml .
 COPY dashboard/ dashboard/
 COPY start.sh .
 RUN chmod +x start.sh
