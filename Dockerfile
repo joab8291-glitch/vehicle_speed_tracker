@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 # ffmpeg + libgl/libglib are needed by OpenCV for RTSP decoding, even in headless mode.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg libgl1 libglib2.0-0 \
+    curl wget libgl1 libglib2.0-0 libsm6 libxext6 libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -21,7 +21,7 @@ RUN chmod +x start.sh
 
 # YOLO weights auto-download on first run if not present; bake them in instead
 # to avoid a slow/flaky download on every container restart:
-RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+ADD https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt /app/yolov8n.pt
 
 # Mount your real config.yaml (with real calibration + secrets resolved from env)
 # at /app/config.yaml when running the container, e.g.:
