@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # start.sh — runs the tracker as a background process and the dashboard as
 # the foreground web process, both reading/writing the same local disk.
 # This is what lets one Render Web Service (or one Docker container) serve
