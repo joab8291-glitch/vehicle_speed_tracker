@@ -11,6 +11,8 @@ COPY requirements.txt .
 COPY dashboard/requirements.txt dashboard/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt -r dashboard/requirements.txt
 
+COPY video.mp4 /app/video.mp4
+COPY config.yaml /app/config.yaml
 COPY vehicle_speed_tracker.py .
 COPY calibrate_points.py .
 COPY bytetrack_custom.yaml .
