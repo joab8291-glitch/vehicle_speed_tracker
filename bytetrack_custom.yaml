@@ -1,0 +1,12 @@
+# bytetrack_custom.yaml
+# Based on Ultralytics' default bytetrack.yaml, with track_buffer doubled
+# (30 -> 60 frames) so an ID survives ~2s of occlusion — e.g. a truck
+# briefly blocking a car — instead of resetting that vehicle's speed history.
+
+tracker_type: bytetrack
+track_high_thresh: 0.25
+track_low_thresh: 0.1
+new_track_thresh: 0.25
+track_buffer: 60
+match_thresh: 0.8
+fuse_score: true
