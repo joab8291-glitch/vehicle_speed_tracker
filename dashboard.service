@@ -1,0 +1,29 @@
+[Unit]
+Description=Vehicle Speed Tracker Dashboard
+After=network-online.target vehicle-tracker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/vehicle-speed-tracker
+EnvironmentFile=/opt/vehicle-speed-tracker/.env
+Environment=PORT=8000
+ExecStart=/opt/vehicle-speed-tracker/venv/bin/gunicorn -b 0.0.0.0:8000 --chdir dashboard --workers 2 app:app
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# Setup (run alongside vehicle-tracker.service on the same VPS, same disk):
+#   sudo cp -r dashboard /opt/vehicle-speed-tracker/
+#   sudo cp start.sh /opt/vehicle-speed-tracker/
+#   cd /opt/vehicle-speed-tracker && venv/bin/pip install -r dashboard/requirements.txt
+#   Add to /opt/vehicle-speed-tracker/.env (chmod 600 that file):
+#     DASHBOARD_USER=admin
+#     DASHBOARD_PASS=@Joab4550
+#   sudo cp dashboard.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now dashboard
+#   Visit http://<your-vps-ip>:8000 (put it behind nginx + a domain/TLS for anything public-facing)
