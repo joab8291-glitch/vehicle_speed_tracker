@@ -1,2 +1,14 @@
+# Web / dashboard
 flask>=3.0.0
 gunicorn>=22.0.0
+
+# Core tracker dependencies
+ultralytics>=8.0.0
+opencv-python-headless>=4.8.0
+numpy>=1.24.0
+torch>=2.0.0          # CPU version is fine on Render
+torchvision>=0.15.0
+
+# Optional but commonly needed
+PyYAML>=6.0
+requests>=2.31.0
