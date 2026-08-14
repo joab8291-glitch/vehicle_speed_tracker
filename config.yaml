@@ -12,8 +12,8 @@ output: null
 log: speed_log.csv
 model: /app/yolov8n.pt
 device: cpu
-imgsz: 640
-process_every: 1
+imgsz: 416
+process_every: 2
 display: false
 
 camera:
