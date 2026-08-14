@@ -1,0 +1,26 @@
+[Unit]
+Description=Vehicle Speed Tracker (RTSP CCTV)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/vehicle-speed-tracker
+EnvironmentFile=/opt/vehicle-speed-tracker/.env
+ExecStart=/opt/vehicle-speed-tracker/venv/bin/python vehicle_speed_tracker.py --config config.yaml
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+# Setup:
+#   sudo mkdir -p /opt/vehicle-speed-tracker
+#   sudo cp vehicle_speed_tracker.py calibrate_points.py bytetrack_custom.yaml config.yaml /opt/vehicle-speed-tracker/
+#   cd /opt/vehicle-speed-tracker && python3 -m venv venv && venv/bin/pip install -r requirements.txt
+#   sudo nano .env               # RTSP_USER=... RTSP_PASS=... RTSP_HOST=... etc, chmod 600
+#   sudo cp vehicle-tracker.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now vehicle-tracker
+#   journalctl -u vehicle-tracker -f
