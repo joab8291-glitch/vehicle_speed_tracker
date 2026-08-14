@@ -1,26 +1,25 @@
-# config.example.yaml
-# Copy this to config.yaml and edit for your camera. Do NOT commit config.yaml
-# with real credentials in it — use ${ENV_VAR} placeholders instead, and set
-# those variables in your shell / Render environment / systemd EnvironmentFile.
+# config.yaml
+# Secrets are pulled from environment variables — never hard-code passwords/tokens here.
+# Set these in Render → Environment:
+#   RTSP_USER, RTSP_PASS, RTSP_HOST
+#   (optional) TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, ALERT_WEBHOOK_URL
 
 # --- Video source ---------------------------------------------------------
-# Recorded file:
-#   source: video.mp4
-# RTSP CCTV (credentials pulled from environment, never written here):
-source: "rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST}:554/Streaming/Channels/101"
-# USB webcam: source: 0
+source: "rtsp://\( {RTSP_USER}: \){RTSP_PASS}@${RTSP_HOST}:554/Streaming/Channels/101"
+# Alternatives:
+# source: video.mp4
+# source: 0                    # USB webcam
 
-output: null            # non-live fallback filename; live runs use `recording:` below instead
+output: null
 log: speed_log.csv
-model: yolov8n.pt
-device: cpu              # cpu / cuda:0 / mps
+model: /app/yolov8n.pt         # path we baked into the Docker image
+device: cpu
 imgsz: 640
-process_every: 1         # process every Nth frame; raise to 2-3 on weak hardware
-display: false            # true opens a live preview window (needs a display)
+process_every: 1
+display: false
 
 # --- Camera calibration ----------------------------------------------------
-# Run: python calibrate_points.py --source "<your source>" --regions 2
-# then paste the printed src_road_l / src_road_r arrays here.
+# Replace these with the values from calibrate_points.py for YOUR camera
 camera:
   lane_width_m: 3.75
   num_lanes_left: 5
@@ -30,7 +29,7 @@ camera:
   src_road_l: [[155, 415], [600, 395], [845, 1079], [0, 1079]]
   src_road_r: [[845, 395], [1140, 395], [1220, 1079], [900, 1079]]
   undistort:
-    enabled: false        # set true only after a proper OpenCV camera calibration
+    enabled: false
     camera_matrix: null
     dist_coeffs: null
 
@@ -52,17 +51,17 @@ counting:
 
 # --- Alerts ------------------------------------------------------------------
 alerts:
-  enabled: false
+  enabled: false                       # set true when you want alerts
   speed_kph_threshold: 100
-  webhook_url: null                              # e.g. "${ALERT_WEBHOOK_URL}"
-  telegram_bot_token: "${TELEGRAM_BOT_TOKEN}"     # only read if alerts.enabled: true
+  webhook_url: "${ALERT_WEBHOOK_URL}"  # optional
+  telegram_bot_token: "${TELEGRAM_BOT_TOKEN}"
   telegram_chat_id: "${TELEGRAM_CHAT_ID}"
   snapshot_dir: snapshots
   save_full_frame: true
 
-# --- Recording rotation & retention (24/7 live runs only) --------------------
+# --- Recording (24/7 live) --------------------------------------------------
 recording:
   enabled: true
   output_dir: recordings
-  segment_minutes: 60      # start a new video file every hour
-  retention_days: 7        # delete segments older than this automatically
+  segment_minutes: 60
+  retention_days: 7
