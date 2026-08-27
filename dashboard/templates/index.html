@@ -6,680 +6,565 @@
 <meta charset="utf-8">
 
 <meta
-  name="viewport"
-  content="width=device-width, initial-scale=1"
+    name="viewport"
+    content="width=device-width, initial-scale=1"
 >
 
 <title>Webazi Traffic Watch</title>
 
 <link
-  rel="preconnect"
-  href="https://fonts.googleapis.com"
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
 >
 
 <link
-  href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-  rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
 >
 
 <style>
 
 :root{
-  --bg:#0A0D0B;
-  --panel:#12160F;
-  --panel-border:#20291F;
-  --text:#E7EFE9;
-  --muted:#7E8C82;
-  --green:#34D399;
-  --amber:#F5A623;
-  --red:#F0473E;
-  --teal:#4DD8C8;
-  --radius:10px;
+    --bg:#0A0D0B;
+    --panel:#12160F;
+    --panel-border:#20291F;
+    --text:#E7EFE9;
+    --muted:#7E8C82;
+    --green:#34D399;
+    --amber:#F5A623;
+    --red:#F0473E;
+    --teal:#4DD8C8;
+    --radius:10px;
 }
 
 *{
-  box-sizing:border-box;
+    box-sizing:border-box;
 }
 
 html,
 body{
-  margin:0;
-  padding:0;
+    margin:0;
+    padding:0;
 }
 
 body{
 
-  background:
-    radial-gradient(
-      1200px 600px at 15% -10%,
-      rgba(52,211,153,0.06),
-      transparent 60%
-    ),
-    var(--bg);
+    background:
+        radial-gradient(
+            1200px 600px
+            at 15% -10%,
+            rgba(52,211,153,0.06),
+            transparent 60%
+        ),
+        var(--bg);
 
-  color:var(--text);
+    color:var(--text);
 
-  font-family:
-    'IBM Plex Sans',
-    sans-serif;
+    font-family:
+        'IBM Plex Sans',
+        sans-serif;
 
-  min-height:100vh;
+    min-height:100vh;
 
-  padding:
-    28px 20px 60px;
+    padding:
+        28px 20px 60px;
 }
 
 .wrap{
-  max-width:1080px;
-  margin:0 auto;
+    max-width:1080px;
+    margin:0 auto;
 }
 
 header{
 
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
 
-  flex-wrap:wrap;
+    flex-wrap:wrap;
 
-  gap:14px;
+    gap:14px;
 
-  margin-bottom:26px;
+    margin-bottom:26px;
 
-  padding-bottom:18px;
+    padding-bottom:18px;
 
-  border-bottom:
-    1px solid var(--panel-border);
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
+    border-bottom:
+        1px solid
+        var(--panel-border);
 }
 
 .brand h1{
 
-  font-family:
-    'Space Grotesk',
-    sans-serif;
+    font-family:
+        'Space Grotesk',
+        sans-serif;
 
-  font-weight:600;
+    font-size:22px;
 
-  font-size:22px;
-
-  letter-spacing:0.01em;
-
-  margin:0;
+    margin:0;
 }
 
-.brand .sub{
+.sub{
 
-  font-family:
-    'IBM Plex Mono',
-    monospace;
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  font-size:11px;
+    font-size:11px;
 
-  color:var(--muted);
+    color:var(--muted);
 
-  letter-spacing:0.08em;
-
-  text-transform:uppercase;
-
-  margin-top:2px;
+    margin-top:2px;
 }
 
 .status{
 
-  display:flex;
-  align-items:center;
+    display:flex;
 
-  gap:10px;
+    align-items:center;
 
-  font-family:
-    'IBM Plex Mono',
-    monospace;
+    gap:10px;
 
-  font-size:12px;
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  color:var(--muted);
+    font-size:12px;
+
+    color:var(--muted);
 }
 
 .dot{
 
-  width:9px;
-  height:9px;
+    width:9px;
+    height:9px;
 
-  border-radius:50%;
+    border-radius:50%;
 
-  background:var(--muted);
-
-  position:relative;
+    background:
+        var(--muted);
 }
 
 .dot.on{
-  background:var(--green);
-}
-
-.dot.on::after{
-
-  content:'';
-
-  position:absolute;
-
-  inset:-5px;
-
-  border-radius:50%;
-
-  border:
-    1px solid var(--green);
-
-  animation:
-    pulse 1.8s ease-out infinite;
-}
-
-@keyframes pulse{
-
-  0%{
-    transform:scale(0.6);
-    opacity:0.9;
-  }
-
-  100%{
-    transform:scale(2.2);
-    opacity:0;
-  }
-
+    background:
+        var(--green);
 }
 
 .grid{
 
-  display:grid;
+    display:grid;
 
-  grid-template-columns:
-    repeat(4, 1fr);
+    grid-template-columns:
+        repeat(4,1fr);
 
-  gap:14px;
+    gap:14px;
 
-  margin-bottom:14px;
+    margin-bottom:14px;
 }
 
 @media(max-width:720px){
 
-  .grid{
-    grid-template-columns:
-      repeat(2,1fr);
-  }
+    .grid{
+        grid-template-columns:
+            repeat(2,1fr);
+    }
 
 }
 
 .card{
 
-  background:var(--panel);
+    background:
+        var(--panel);
 
-  border:
-    1px solid var(--panel-border);
+    border:
+        1px solid
+        var(--panel-border);
 
-  border-radius:var(--radius);
+    border-radius:
+        var(--radius);
 
-  padding:16px 18px;
+    padding:
+        16px 18px;
 }
 
-.card .label{
+.label{
 
-  font-family:
-    'IBM Plex Mono',
-    monospace;
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  font-size:10.5px;
+    font-size:10.5px;
 
-  letter-spacing:0.1em;
+    letter-spacing:
+        .1em;
 
-  text-transform:uppercase;
+    text-transform:
+        uppercase;
 
-  color:var(--muted);
+    color:
+        var(--muted);
 
-  margin-bottom:8px;
+    margin-bottom:8px;
 }
 
-.card .value{
+.value{
 
-  font-family:
-    'Space Grotesk',
-    sans-serif;
+    font-family:
+        'Space Grotesk',
+        sans-serif;
 
-  font-weight:700;
+    font-size:32px;
 
-  font-size:32px;
-
-  line-height:1;
+    font-weight:700;
 }
 
-.card .value.green{
-  color:var(--green);
-}
+.unit{
 
-.card .value.amber{
-  color:var(--amber);
-}
+    font-size:14px;
 
-.card .value.red{
-  color:var(--red);
-}
+    color:
+        var(--muted);
 
-.card .unit{
-
-  font-size:14px;
-
-  color:var(--muted);
-
-  font-weight:500;
-
-  margin-left:4px;
+    margin-left:4px;
 }
 
 section{
 
-  background:var(--panel);
+    background:
+        var(--panel);
 
-  border:
-    1px solid var(--panel-border);
+    border:
+        1px solid
+        var(--panel-border);
 
-  border-radius:var(--radius);
+    border-radius:
+        var(--radius);
 
-  padding:18px 20px;
+    padding:
+        18px 20px;
 
-  margin-bottom:14px;
+    margin-bottom:14px;
 }
 
 section h2{
 
-  font-family:
-    'Space Grotesk',
-    sans-serif;
+    font-family:
+        'Space Grotesk',
+        sans-serif;
 
-  font-size:14px;
+    font-size:14px;
 
-  font-weight:600;
-
-  margin:0 0 4px;
+    margin:
+        0 0 4px;
 }
 
-section .desc{
+.desc{
 
-  font-size:12px;
+    font-size:12px;
 
-  color:var(--muted);
+    color:
+        var(--muted);
 
-  margin:0 0 16px;
+    margin:
+        0 0 16px;
 }
 
 
-/* ============================================================
+/* =========================================================
    VIDEO
-   ============================================================ */
+   ========================================================= */
 
 .video-container{
 
-  width:100%;
+    width:100%;
 
-  background:#000;
+    background:#000;
 
-  border-radius:8px;
+    border-radius:8px;
 
-  overflow:hidden;
+    overflow:hidden;
 
-  border:
-    1px solid var(--panel-border);
-
-  position:relative;
-
-  min-height:240px;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
+    border:
+        1px solid
+        var(--panel-border);
 }
 
-#processedVideo{
+video{
 
-  display:block;
+    width:100%;
 
-  width:100%;
+    max-height:620px;
 
-  max-height:620px;
+    display:block;
 
-  background:#000;
-}
-
-.video-empty{
-
-  position:absolute;
-
-  inset:0;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  flex-direction:column;
-
-  gap:8px;
-
-  color:var(--muted);
-
-  font-family:
-    'IBM Plex Mono',
-    monospace;
-
-  font-size:12px;
-
-  text-align:center;
-}
-
-.video-empty.hidden{
-  display:none;
+    background:#000;
 }
 
 .video-status{
 
-  margin-top:10px;
+    padding:12px;
 
-  font-family:
-    'IBM Plex Mono',
-    monospace;
+    text-align:center;
 
-  font-size:11px;
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  color:var(--muted);
+    font-size:12px;
+
+    color:
+        var(--muted);
 }
 
 
-/* ============================================================
+/* =========================================================
    PULSE
-   ============================================================ */
+   ========================================================= */
 
 .pulse{
 
-  display:flex;
+    display:flex;
 
-  align-items:flex-end;
+    align-items:flex-end;
 
-  gap:3px;
+    gap:3px;
 
-  height:90px;
+    height:90px;
 
-  padding:6px 0;
+    padding:6px 0;
 
-  border-bottom:
-    1px solid var(--panel-border);
+    border-bottom:
+        1px solid
+        var(--panel-border);
 }
 
 .pulse-bar{
 
-  flex:1 1 auto;
+    flex:
+        1 1 auto;
 
-  min-width:3px;
+    min-width:3px;
 
-  border-radius:
-    2px 2px 0 0;
-
-  transition:
-    height 0.3s ease;
+    border-radius:
+        2px 2px 0 0;
 }
 
 .pulse-empty{
 
-  font-family:
-    'IBM Plex Mono',
-    monospace;
+    width:100%;
 
-  font-size:12px;
+    text-align:center;
 
-  color:var(--muted);
+    color:
+        var(--muted);
 
-  padding:30px 0;
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  text-align:center;
+    font-size:12px;
 
-  width:100%;
+    padding:30px 0;
 }
 
 
-/* ============================================================
+/* =========================================================
    CLASS BARS
-   ============================================================ */
+   ========================================================= */
 
 .classbars{
 
-  display:flex;
+    display:flex;
 
-  flex-direction:column;
+    flex-direction:column;
 
-  gap:10px;
+    gap:10px;
 }
 
 .classbar-row{
 
-  display:flex;
+    display:flex;
 
-  align-items:center;
+    align-items:center;
 
-  gap:12px;
+    gap:12px;
 }
 
-.classbar-row .cname{
+.cname{
 
-  width:90px;
+    width:90px;
 
-  font-size:13px;
+    color:
+        var(--muted);
 
-  color:var(--muted);
-
-  flex-shrink:0;
+    font-size:13px;
 }
 
 .classbar-track{
 
-  flex:1;
+    flex:1;
 
-  height:8px;
+    height:8px;
 
-  background:#1B221A;
+    background:#1B221A;
 
-  border-radius:4px;
+    border-radius:4px;
 
-  overflow:hidden;
+    overflow:hidden;
 }
 
 .classbar-fill{
 
-  height:100%;
+    height:100%;
 
-  background:var(--teal);
-
-  border-radius:4px;
+    background:
+        var(--teal);
 }
 
-.classbar-row .cval{
+.cval{
 
-  font-family:
-    'IBM Plex Mono',
-    monospace;
+    width:34px;
 
-  font-size:12px;
+    text-align:right;
 
-  width:34px;
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  text-align:right;
-
-  color:var(--text);
+    font-size:12px;
 }
 
 
-/* ============================================================
+/* =========================================================
    TABLE
-   ============================================================ */
+   ========================================================= */
 
 table{
 
-  width:100%;
+    width:100%;
 
-  border-collapse:collapse;
+    border-collapse:
+        collapse;
 
-  font-size:13px;
+    font-size:13px;
 }
 
-thead th{
+th{
 
-  text-align:left;
+    text-align:left;
 
-  font-family:
-    'IBM Plex Mono',
-    monospace;
+    color:
+        var(--muted);
 
-  font-size:10.5px;
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  letter-spacing:0.08em;
+    font-size:10.5px;
 
-  text-transform:uppercase;
+    padding:
+        0 10px 10px;
 
-  color:var(--muted);
-
-  font-weight:500;
-
-  padding:
-    0 10px 10px;
-
-  border-bottom:
-    1px solid var(--panel-border);
+    border-bottom:
+        1px solid
+        var(--panel-border);
 }
 
-tbody td{
+td{
 
-  padding:10px;
+    padding:10px;
 
-  border-bottom:
-    1px solid var(--panel-border);
-
-  vertical-align:middle;
-}
-
-tbody tr:last-child td{
-  border-bottom:none;
-}
-
-.kph-pill{
-
-  font-family:
-    'IBM Plex Mono',
-    monospace;
-
-  font-weight:600;
-
-  font-size:13px;
-
-  padding:
-    2px 8px;
-
-  border-radius:20px;
-
-  display:inline-block;
-}
-
-.kph-pill.amber{
-
-  background:
-    rgba(245,166,35,0.15);
-
-  color:var(--amber);
-}
-
-.kph-pill.red{
-
-  background:
-    rgba(240,71,62,0.15);
-
-  color:var(--red);
+    border-bottom:
+        1px solid
+        var(--panel-border);
 }
 
 .thumb{
 
-  width:56px;
-  height:40px;
+    width:56px;
 
-  object-fit:cover;
+    height:40px;
 
-  border-radius:5px;
+    object-fit:cover;
 
-  border:
-    1px solid var(--panel-border);
-
-  background:#1B221A;
-
-  display:block;
+    border-radius:5px;
 }
 
-.thumb-empty{
+.kph-pill{
 
-  width:56px;
-  height:40px;
+    padding:
+        2px 8px;
 
-  border-radius:5px;
+    border-radius:
+        20px;
 
-  border:
-    1px dashed var(--panel-border);
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  display:flex;
+    font-weight:600;
+}
 
-  align-items:center;
+.amber{
 
-  justify-content:center;
+    color:
+        var(--amber);
+}
 
-  color:var(--muted);
+.red{
 
-  font-size:10px;
+    color:
+        var(--red);
+}
+
+.kph-pill.amber{
+
+    background:
+        rgba(245,166,35,.15);
+}
+
+.kph-pill.red{
+
+    background:
+        rgba(240,71,62,.15);
 }
 
 .empty-state{
 
-  font-family:
-    'IBM Plex Mono',
-    monospace;
+    text-align:center;
 
-  font-size:12px;
+    padding:20px;
 
-  color:var(--muted);
+    color:
+        var(--muted);
 
-  padding:20px 0;
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  text-align:center;
+    font-size:12px;
 }
 
 footer{
 
-  text-align:center;
+    text-align:center;
 
-  font-family:
-    'IBM Plex Mono',
-    monospace;
+    color:
+        var(--muted);
 
-  font-size:11px;
+    font-family:
+        'IBM Plex Mono',
+        monospace;
 
-  color:var(--muted);
+    font-size:11px;
 
-  margin-top:24px;
+    margin-top:24px;
 }
 
 </style>
 
 </head>
-
 
 <body>
 
@@ -687,288 +572,285 @@ footer{
 
 <header>
 
-  <div class="brand">
+<div class="brand">
 
-    <div>
+<h1>
+Webazi Traffic Watch
+</h1>
 
-      <h1>Webazi Traffic Watch</h1>
+<div class="sub">
+Speed monitoring console
+</div>
 
-      <div class="sub">
-        Speed monitoring console
-      </div>
+</div>
 
-    </div>
+<div class="status">
 
-  </div>
+<span
+    class="dot"
+    id="liveDot"
+></span>
 
+<span id="liveLabel">
+connecting…
+</span>
 
-  <div class="status">
+<span>·</span>
 
-    <span
-      class="dot"
-      id="liveDot"
-    ></span>
+<span id="uptime">
+uptime 00:00:00
+</span>
 
-    <span id="liveLabel">
-      connecting…
-    </span>
-
-    <span>·</span>
-
-    <span id="uptime">
-      uptime 00:00:00
-    </span>
-
-  </div>
+</div>
 
 </header>
 
 
-<!-- ========================================================
-     PROCESSED VIDEO
-     ======================================================== -->
+<!-- ======================================================
+     VIDEO
+====================================================== -->
 
 <section>
 
-  <h2>Processed traffic video</h2>
+<h2>
+Processed Video
+</h2>
 
-  <p class="desc">
-    YOLO vehicle detection, tracking and calculated speeds.
-  </p>
+<p class="desc">
+YOLO vehicle detection and speed annotations.
+</p>
 
+<div class="video-container">
 
-  <div class="video-container">
+<video
+    id="processedVideo"
+    controls
+    preload="metadata"
+    playsinline
+>
 
-    <video
-      id="processedVideo"
-      controls
-      preload="metadata"
-      playsinline
-    >
-      <source
-        id="videoSource"
-        src="/processed-video"
-        type="video/mp4"
-      >
+<source
+    src="/video"
+    type="video/mp4"
+>
 
-      Your browser does not support HTML5 video.
-    </video>
+Your browser does not support video playback.
 
+</video>
 
-    <div
-      id="videoEmpty"
-      class="video-empty hidden"
-    >
-
-      <div>
-        Processed video is not available yet.
-      </div>
-
-      <div>
-        The tracker is still preparing output_speed.mp4.
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <div
-    id="videoStatus"
+<div
     class="video-status"
-  >
-    Checking processed video…
-  </div>
+    id="videoStatus"
+>
+Checking processed video…
+</div>
+
+</div>
 
 </section>
 
 
-<!-- ========================================================
-     STATISTICS
-     ======================================================== -->
+<!-- ======================================================
+     STATS
+====================================================== -->
 
 <div class="grid">
 
-  <div class="card">
+<div class="card">
 
-    <div class="label">
-      Average speed
-    </div>
+<div class="label">
+Average speed
+</div>
 
-    <div
-      class="value"
-      id="avgKph"
-    >
-      –<span class="unit">
-        km/h
-      </span>
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="label">
-      Top speed recorded
-    </div>
-
-    <div
-      class="value"
-      id="maxKph"
-    >
-      –<span class="unit">
-        km/h
-      </span>
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="label">
-      Vehicles tracked
-    </div>
-
-    <div
-      class="value"
-      id="totalVehicles"
-    >
-      –
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="label">
-      Speeding alerts
-    </div>
-
-    <div
-      class="value"
-      id="alertCount"
-    >
-      –
-    </div>
-
-  </div>
+<div
+    class="value"
+    id="avgKph"
+>
+–
+<span class="unit">
+km/h
+</span>
+</div>
 
 </div>
 
 
-<!-- ========================================================
-     SPEED PULSE
-     ======================================================== -->
+<div class="card">
+
+<div class="label">
+Top speed recorded
+</div>
+
+<div
+    class="value"
+    id="maxKph"
+>
+–
+<span class="unit">
+km/h
+</span>
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+Vehicles tracked
+</div>
+
+<div
+    class="value"
+    id="totalVehicles"
+>
+–
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+Speeding alerts
+</div>
+
+<div
+    class="value"
+    id="alertCount"
+>
+–
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ======================================================
+     PULSE
+====================================================== -->
 
 <section>
 
-  <h2>Speed pulse</h2>
+<h2>
+Speed pulse
+</h2>
 
-  <p class="desc">
-    The last speeding alerts, in order.
-  </p>
+<p class="desc">
+Recent speeding alerts.
+</p>
 
-  <div
+<div
     class="pulse"
     id="pulse"
-  >
+>
 
-    <div class="pulse-empty">
-      No alerts yet
-    </div>
+<div class="pulse-empty">
+No alerts yet
+</div>
 
-  </div>
+</div>
 
 </section>
 
 
-<!-- ========================================================
+<!-- ======================================================
      VEHICLE CLASSES
-     ======================================================== -->
+====================================================== -->
 
 <section>
 
-  <h2>
-    Traffic by vehicle class
-  </h2>
+<h2>
+Traffic by vehicle class
+</h2>
 
-  <p class="desc">
-    Vehicles counted since this run started.
-  </p>
+<p class="desc">
+Vehicles counted during processing.
+</p>
 
-  <div
+<div
     class="classbars"
     id="classbars"
-  >
+>
 
-    <div class="empty-state">
-      No vehicles counted yet
-    </div>
+<div class="empty-state">
+No vehicles counted yet
+</div>
 
-  </div>
+</div>
 
 </section>
 
 
-<!-- ========================================================
+<!-- ======================================================
      ALERT LOG
-     ======================================================== -->
+====================================================== -->
 
 <section>
 
-  <h2>
-    Alert log
-  </h2>
+<h2>
+Alert log
+</h2>
 
-  <p class="desc">
-    Most recent speeding events, newest first.
-  </p>
+<p class="desc">
+Most recent speeding events.
+</p>
 
+<table>
 
-  <table>
+<thead>
 
-    <thead>
+<tr>
 
-      <tr>
+<th>
+Time
+</th>
 
-        <th>Time</th>
+<th>
+Class
+</th>
 
-        <th>Class</th>
+<th>
+Speed
+</th>
 
-        <th>Speed</th>
+<th>
+Snapshot
+</th>
 
-        <th>Snapshot</th>
+</tr>
 
-      </tr>
+</thead>
 
-    </thead>
+<tbody
+    id="alertRows"
+>
 
+<tr>
 
-    <tbody id="alertRows">
+<td
+    colspan="4"
+    class="empty-state"
+>
+No alerts yet
+</td>
 
-      <tr>
+</tr>
 
-        <td
-          colspan="4"
-          class="empty-state"
-        >
-          No alerts yet
-        </td>
+</tbody>
 
-      </tr>
-
-    </tbody>
-
-  </table>
+</table>
 
 </section>
 
 
 <footer>
-  Refreshes every 8s · Webazi Digital Solutions
+
+Refreshes every 8 seconds ·
+Webazi Digital Solutions
+
 </footer>
 
 </div>
@@ -977,554 +859,433 @@ footer{
 <script>
 
 const GREEN_MAX = 60;
-
 const AMBER_MAX = 100;
 
 
-/* ============================================================
-   Speed classification
-   ============================================================ */
-
 function kphClass(kph){
 
-  if(kph >= AMBER_MAX){
-    return 'red';
-  }
+    if(kph >= AMBER_MAX)
+        return "red";
 
-  if(kph >= GREEN_MAX){
-    return 'amber';
-  }
+    if(kph >= GREEN_MAX)
+        return "amber";
 
-  return 'green';
+    return "green";
 }
 
 
-/* ============================================================
-   Uptime
-   ============================================================ */
+function fmtUptime(seconds){
 
-function fmtUptime(s){
+    const h =
+        String(
+            Math.floor(seconds / 3600)
+        ).padStart(2,"0");
 
-  const h = String(
-    Math.floor(s / 3600)
-  ).padStart(2,'0');
+    const m =
+        String(
+            Math.floor(
+                (seconds % 3600) / 60
+            )
+        ).padStart(2,"0");
 
-  const m = String(
-    Math.floor(
-      (s % 3600) / 60
-    )
-  ).padStart(2,'0');
+    const s =
+        String(
+            seconds % 60
+        ).padStart(2,"0");
 
-  const sec = String(
-    s % 60
-  ).padStart(2,'0');
-
-  return `uptime ${h}:${m}:${sec}`;
+    return `uptime ${h}:${m}:${s}`;
 }
 
-
-/* ============================================================
-   Processed video
-   ============================================================ */
-
-async function refreshVideo(){
-
-  const video =
-    document.getElementById(
-      'processedVideo'
-    );
-
-  const empty =
-    document.getElementById(
-      'videoEmpty'
-    );
-
-  const status =
-    document.getElementById(
-      'videoStatus'
-    );
-
-  try{
-
-    const response =
-      await fetch(
-        '/api/video-status',
-        {
-          cache:'no-store'
-        }
-      );
-
-    if(!response.ok){
-      throw new Error(
-        'Video status request failed'
-      );
-    }
-
-    const data =
-      await response.json();
-
-
-    if(data.available){
-
-      empty.classList.add(
-        'hidden'
-      );
-
-      video.style.display =
-        'block';
-
-      status.textContent =
-        'Processed video available.';
-
-
-      /*
-       * Add a cache-busting query parameter.
-       * This makes the browser request the
-       * newest generated video.
-       */
-
-      const currentSrc =
-        `/processed-video?t=${Date.now()}`;
-
-      const source =
-        document.getElementById(
-          'videoSource'
-        );
-
-      if(
-        source.getAttribute('src')
-        !== currentSrc
-      ){
-
-        source.setAttribute(
-          'src',
-          currentSrc
-        );
-
-        video.load();
-      }
-
-    }else{
-
-      video.style.display =
-        'none';
-
-      empty.classList.remove(
-        'hidden'
-      );
-
-      status.textContent =
-        'Waiting for processed video…';
-    }
-
-  }catch(error){
-
-    video.style.display =
-      'none';
-
-    empty.classList.remove(
-      'hidden'
-    );
-
-    status.textContent =
-      'Unable to check processed video.';
-  }
-}
-
-
-/* ============================================================
-   Dashboard refresh
-   ============================================================ */
 
 async function refresh(){
 
-  let data;
+    try{
+
+        const response =
+            await fetch(
+                "/api/stats",
+                {
+                    cache:"no-store"
+                }
+            );
+
+        if(!response.ok)
+            throw new Error(
+                "API error"
+            );
+
+        const data =
+            await response.json();
 
 
-  try{
+        /* STATUS */
 
-    const res =
-      await fetch(
-        '/api/stats',
-        {
-          cache:'no-store'
+        const dot =
+            document.getElementById(
+                "liveDot"
+            );
+
+        const label =
+            document.getElementById(
+                "liveLabel"
+            );
+
+        if(data.live){
+
+            dot.classList.add("on");
+
+            label.textContent =
+                `live · updated ${data.last_update}`;
+
+        }else{
+
+            dot.classList.remove("on");
+
+            label.textContent =
+                `processing / no recent log · ${data.last_update}`;
         }
-      );
 
 
-    if(!res.ok){
-      throw new Error(
-        'Stats request failed'
-      );
-    }
-
-
-    data =
-      await res.json();
-
-
-  }catch(e){
-
-    document.getElementById(
-      'liveLabel'
-    ).textContent =
-      'dashboard offline';
-
-
-    document.getElementById(
-      'liveDot'
-    ).classList.remove(
-      'on'
-    );
-
-    return;
-  }
-
-
-  /* ========================================================
-     Live indicator
-     ======================================================== */
-
-  const dot =
-    document.getElementById(
-      'liveDot'
-    );
-
-  const label =
-    document.getElementById(
-      'liveLabel'
-    );
-
-
-  if(data.live){
-
-    dot.classList.add('on');
-
-    label.textContent =
-      `live · updated ${data.last_update}`;
-
-  }else{
-
-    dot.classList.remove('on');
-
-    label.textContent =
-      `no recent data · last update ${data.last_update}`;
-  }
-
-
-  document.getElementById(
-    'uptime'
-  ).textContent =
-    fmtUptime(data.uptime_s);
-
-
-  /* ========================================================
-     Speed cards
-     ======================================================== */
-
-  const avgEl =
-    document.getElementById(
-      'avgKph'
-    );
-
-  avgEl.innerHTML =
-    `${data.avg_kph}<span class="unit">km/h</span>`;
-
-  avgEl.className =
-    'value ' +
-    kphClass(
-      data.avg_kph
-    );
-
-
-  const maxEl =
-    document.getElementById(
-      'maxKph'
-    );
-
-  maxEl.innerHTML =
-    `${data.max_kph}<span class="unit">km/h</span>`;
-
-  maxEl.className =
-    'value ' +
-    kphClass(
-      data.max_kph
-    );
-
-
-  document.getElementById(
-    'totalVehicles'
-  ).textContent =
-    data.total_vehicles;
-
-
-  document.getElementById(
-    'alertCount'
-  ).textContent =
-    data.alert_count;
-
-
-  /* ========================================================
-     Speed pulse
-     ======================================================== */
-
-  const pulseEl =
-    document.getElementById(
-      'pulse'
-    );
-
-
-  if(
-    data.pulse &&
-    data.pulse.length
-  ){
-
-    const maxVal =
-      Math.max(
-        ...data.pulse,
-        AMBER_MAX
-      );
-
-
-    pulseEl.innerHTML =
-      data.pulse
-        .map(kph => {
-
-          const h =
-            Math.max(
-              6,
-              Math.round(
-                (kph / maxVal) * 84
-              )
+        document.getElementById(
+            "uptime"
+        ).textContent =
+            fmtUptime(
+                data.uptime_s
             );
 
 
-          const cls =
-            kphClass(kph);
+        /* VIDEO STATUS */
+
+        const videoStatus =
+            document.getElementById(
+                "videoStatus"
+            );
+
+        if(data.video_exists){
+
+            videoStatus.textContent =
+                "Processed video available.";
+
+        }else{
+
+            videoStatus.textContent =
+                "Video is still being processed. Refreshing automatically…";
+        }
 
 
-          const color =
-            cls === 'red'
-              ? 'var(--red)'
-              : cls === 'amber'
-                ? 'var(--amber)'
-                : 'var(--green)';
+        /* STATS */
 
+        const avg =
+            document.getElementById(
+                "avgKph"
+            );
 
-          return `
-            <div
-              class="pulse-bar"
-              style="height:${h}px;background:${color}"
-              title="${kph} km/h"
-            ></div>
-          `;
+        avg.innerHTML =
+            `${data.avg_kph}<span class="unit">km/h</span>`;
 
-        })
-        .join('');
-
-  }else{
-
-    pulseEl.innerHTML =
-      '<div class="pulse-empty">No alerts yet</div>';
-  }
-
-
-  /* ========================================================
-     Vehicle class breakdown
-     ======================================================== */
-
-  const cb =
-    document.getElementById(
-      'classbars'
-    );
-
-
-  const entries =
-    Object.entries(
-      data.class_counts || {}
-    );
-
-
-  if(entries.length){
-
-    const maxCount =
-      Math.max(
-        ...entries.map(
-          e => e[1]
-        )
-      );
-
-
-    cb.innerHTML =
-      entries
-        .sort(
-          (a,b) => b[1] - a[1]
-        )
-        .map(
-          ([name,count]) => `
-
-            <div class="classbar-row">
-
-              <div class="cname">
-                ${name}
-              </div>
-
-              <div class="classbar-track">
-
-                <div
-                  class="classbar-fill"
-                  style="
-                    width:${
-                      (
-                        count /
-                        maxCount *
-                        100
-                      ).toFixed(0)
-                    }%
-                  "
-                ></div>
-
-              </div>
-
-              <div class="cval">
-                ${count}
-              </div>
-
-            </div>
-
-          `
-        )
-        .join('');
-
-  }else{
-
-    cb.innerHTML =
-      '<div class="empty-state">No vehicles counted yet</div>';
-  }
-
-
-  /* ========================================================
-     Alert table
-     ======================================================== */
-
-  const rows =
-    document.getElementById(
-      'alertRows'
-    );
-
-
-  if(
-    data.alerts &&
-    data.alerts.length
-  ){
-
-    rows.innerHTML =
-      data.alerts
-        .map(a => {
-
-          const cls =
+        avg.className =
+            "value " +
             kphClass(
-              a.kph
+                data.avg_kph
             );
 
 
-          const pillCls =
-            cls === 'green'
-              ? ''
-              : cls;
+        const max =
+            document.getElementById(
+                "maxKph"
+            );
+
+        max.innerHTML =
+            `${data.max_kph}<span class="unit">km/h</span>`;
+
+        max.className =
+            "value " +
+            kphClass(
+                data.max_kph
+            );
 
 
-          const thumb =
-            a.snapshot
+        document.getElementById(
+            "totalVehicles"
+        ).textContent =
+            data.total_vehicles;
 
-              ? `
-                <img
-                  class="thumb"
-                  src="/snapshots/${encodeURIComponent(a.snapshot)}"
-                  loading="lazy"
-                  alt="Speeding vehicle"
-                >
-              `
 
-              : `
-                <div class="thumb-empty">
-                  —
+        document.getElementById(
+            "alertCount"
+        ).textContent =
+            data.alert_count;
+
+
+        /* PULSE */
+
+        const pulse =
+            document.getElementById(
+                "pulse"
+            );
+
+        if(
+            data.pulse &&
+            data.pulse.length
+        ){
+
+            const maxValue =
+                Math.max(
+                    ...data.pulse,
+                    AMBER_MAX
+                );
+
+            pulse.innerHTML =
+                data.pulse.map(
+                    kph => {
+
+                        const h =
+                            Math.max(
+                                6,
+                                Math.round(
+                                    kph /
+                                    maxValue *
+                                    84
+                                )
+                            );
+
+                        const cls =
+                            kphClass(
+                                kph
+                            );
+
+                        let color =
+                            "var(--green)";
+
+                        if(
+                            cls === "amber"
+                        )
+                            color =
+                                "var(--amber)";
+
+                        if(
+                            cls === "red"
+                        )
+                            color =
+                                "var(--red)";
+
+                        return `
+                            <div
+                                class="pulse-bar"
+                                style="
+                                    height:${h}px;
+                                    background:${color}
+                                "
+                                title="${kph} km/h"
+                            ></div>
+                        `;
+                    }
+                ).join("");
+
+        }else{
+
+            pulse.innerHTML =
+                `
+                <div class="pulse-empty">
+                    No alerts yet
                 </div>
-              `;
+                `;
+        }
 
 
-          return `
+        /* CLASS BREAKDOWN */
 
-            <tr>
+        const classbars =
+            document.getElementById(
+                "classbars"
+            );
 
-              <td>
-                ${a.timestamp}
-              </td>
+        const entries =
+            Object.entries(
+                data.class_counts || {}
+            );
 
-              <td>
-                ${a.class}
-              </td>
+        if(entries.length){
 
-              <td>
+            const maxCount =
+                Math.max(
+                    ...entries.map(
+                        entry =>
+                            entry[1]
+                    )
+                );
 
-                <span
-                  class="kph-pill ${pillCls}"
-                >
-                  ${a.kph} km/h
-                </span>
+            classbars.innerHTML =
+                entries
+                .sort(
+                    (a,b) =>
+                        b[1] - a[1]
+                )
+                .map(
+                    ([name,count]) => `
 
-              </td>
+                    <div class="classbar-row">
 
-              <td>
-                ${thumb}
-              </td>
+                        <div class="cname">
+                            ${name}
+                        </div>
 
-            </tr>
+                        <div class="classbar-track">
 
-          `;
+                            <div
+                                class="classbar-fill"
+                                style="
+                                    width:${
+                                        (
+                                            count /
+                                            maxCount *
+                                            100
+                                        ).toFixed(0)
+                                    }%
+                                "
+                            ></div>
 
-        })
-        .join('');
+                        </div>
 
-  }else{
+                        <div class="cval">
+                            ${count}
+                        </div>
 
-    rows.innerHTML =
-      `
-        <tr>
-          <td
-            colspan="4"
-            class="empty-state"
-          >
-            No alerts yet
-          </td>
-        </tr>
-      `;
-  }
+                    </div>
 
+                    `
+                ).join("");
+
+        }else{
+
+            classbars.innerHTML =
+                `
+                <div class="empty-state">
+                    No vehicles counted yet
+                </div>
+                `;
+        }
+
+
+        /* ALERT TABLE */
+
+        const rows =
+            document.getElementById(
+                "alertRows"
+            );
+
+        if(
+            data.alerts &&
+            data.alerts.length
+        ){
+
+            rows.innerHTML =
+                data.alerts.map(
+                    alert => {
+
+                        const cls =
+                            kphClass(
+                                alert.kph
+                            );
+
+                        const pill =
+                            cls === "green"
+                            ? ""
+                            : cls;
+
+                        const thumb =
+                            alert.snapshot
+
+                            ?
+
+                            `
+                            <img
+                                class="thumb"
+                                src="/snapshots/${encodeURIComponent(alert.snapshot)}"
+                                loading="lazy"
+                            >
+                            `
+
+                            :
+
+                            "—";
+
+
+                        return `
+
+                        <tr>
+
+                            <td>
+                                ${alert.timestamp}
+                            </td>
+
+                            <td>
+                                ${alert.class}
+                            </td>
+
+                            <td>
+
+                                <span
+                                    class="kph-pill ${pill}"
+                                >
+                                    ${alert.kph} km/h
+                                </span>
+
+                            </td>
+
+                            <td>
+                                ${thumb}
+                            </td>
+
+                        </tr>
+
+                        `;
+                    }
+                ).join("");
+
+        }else{
+
+            rows.innerHTML =
+                `
+                <tr>
+
+                    <td
+                        colspan="4"
+                        class="empty-state"
+                    >
+                        No alerts yet
+                    </td>
+
+                </tr>
+                `;
+        }
+
+
+    }catch(error){
+
+        console.error(
+            error
+        );
+
+        document.getElementById(
+            "liveLabel"
+        ).textContent =
+            "dashboard API unavailable";
+
+        document.getElementById(
+            "liveDot"
+        ).classList.remove(
+            "on"
+        );
+    }
 }
 
 
-/* ============================================================
-   Initial load
-   ============================================================ */
-
 refresh();
 
-refreshVideo();
-
-
-/* ============================================================
-   Automatic refresh
-   ============================================================ */
-
 setInterval(
-  refresh,
-  8000
-);
-
-setInterval(
-  refreshVideo,
-  15000
+    refresh,
+    8000
 );
 
 </script>
