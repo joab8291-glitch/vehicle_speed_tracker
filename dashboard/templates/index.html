@@ -1,418 +1,1534 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Webazi Traffic Watch</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#0A0D0B;
-    --panel:#12160F;
-    --panel-border:#20291F;
-    --text:#E7EFE9;
-    --muted:#7E8C82;
-    --green:#34D399;
-    --amber:#F5A623;
-    --red:#F0473E;
-    --teal:#4DD8C8;
-    --radius:10px;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:
-      radial-gradient(1200px 600px at 15% -10%, rgba(52,211,153,0.06), transparent 60%),
-      var(--bg);
-    color:var(--text);
-    font-family:'IBM Plex Sans', sans-serif;
-    min-height:100vh;
-    padding:28px 20px 60px;
-  }
-  .wrap{max-width:1080px;margin:0 auto;}
 
-  header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:14px;
-    margin-bottom:26px;
-    padding-bottom:18px;
-    border-bottom:1px solid var(--panel-border);
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
+
+<title>Webazi Traffic Watch</title>
+
+<link
+  rel="preconnect"
+  href="https://fonts.googleapis.com"
+>
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+  rel="stylesheet"
+>
+
+<style>
+
+:root{
+  --bg:#0A0D0B;
+  --panel:#12160F;
+  --panel-border:#20291F;
+  --text:#E7EFE9;
+  --muted:#7E8C82;
+  --green:#34D399;
+  --amber:#F5A623;
+  --red:#F0473E;
+  --teal:#4DD8C8;
+  --radius:10px;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,
+body{
+  margin:0;
+  padding:0;
+}
+
+body{
+
+  background:
+    radial-gradient(
+      1200px 600px at 15% -10%,
+      rgba(52,211,153,0.06),
+      transparent 60%
+    ),
+    var(--bg);
+
+  color:var(--text);
+
+  font-family:
+    'IBM Plex Sans',
+    sans-serif;
+
+  min-height:100vh;
+
+  padding:
+    28px 20px 60px;
+}
+
+.wrap{
+  max-width:1080px;
+  margin:0 auto;
+}
+
+header{
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  flex-wrap:wrap;
+
+  gap:14px;
+
+  margin-bottom:26px;
+
+  padding-bottom:18px;
+
+  border-bottom:
+    1px solid var(--panel-border);
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.brand h1{
+
+  font-family:
+    'Space Grotesk',
+    sans-serif;
+
+  font-weight:600;
+
+  font-size:22px;
+
+  letter-spacing:0.01em;
+
+  margin:0;
+}
+
+.brand .sub{
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:11px;
+
+  color:var(--muted);
+
+  letter-spacing:0.08em;
+
+  text-transform:uppercase;
+
+  margin-top:2px;
+}
+
+.status{
+
+  display:flex;
+  align-items:center;
+
+  gap:10px;
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:12px;
+
+  color:var(--muted);
+}
+
+.dot{
+
+  width:9px;
+  height:9px;
+
+  border-radius:50%;
+
+  background:var(--muted);
+
+  position:relative;
+}
+
+.dot.on{
+  background:var(--green);
+}
+
+.dot.on::after{
+
+  content:'';
+
+  position:absolute;
+
+  inset:-5px;
+
+  border-radius:50%;
+
+  border:
+    1px solid var(--green);
+
+  animation:
+    pulse 1.8s ease-out infinite;
+}
+
+@keyframes pulse{
+
+  0%{
+    transform:scale(0.6);
+    opacity:0.9;
   }
-  .brand{display:flex;align-items:center;gap:12px;}
-  .brand h1{
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:600;
-    font-size:22px;
-    letter-spacing:0.01em;
-    margin:0;
+
+  100%{
+    transform:scale(2.2);
+    opacity:0;
   }
-  .brand .sub{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:11px;
-    color:var(--muted);
-    letter-spacing:0.08em;
-    text-transform:uppercase;
-    margin-top:2px;
-  }
-  .status{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-family:'IBM Plex Mono', monospace;
-    font-size:12px;
-    color:var(--muted);
-  }
-  .dot{
-    width:9px;height:9px;border-radius:50%;
-    background:var(--muted);
-    position:relative;
-  }
-  .dot.on{background:var(--green);}
-  .dot.on::after{
-    content:'';
-    position:absolute; inset:-5px;
-    border-radius:50%;
-    border:1px solid var(--green);
-    animation:pulse 1.8s ease-out infinite;
-  }
-  @keyframes pulse{
-    0%{transform:scale(0.6);opacity:0.9;}
-    100%{transform:scale(2.2);opacity:0;}
-  }
+
+}
+
+.grid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap:14px;
+
+  margin-bottom:14px;
+}
+
+@media(max-width:720px){
 
   .grid{
-    display:grid;
-    grid-template-columns:repeat(4, 1fr);
-    gap:14px;
-    margin-bottom:14px;
-  }
-  @media (max-width:720px){ .grid{grid-template-columns:repeat(2,1fr);} }
-
-  .card{
-    background:var(--panel);
-    border:1px solid var(--panel-border);
-    border-radius:var(--radius);
-    padding:16px 18px;
-  }
-  .card .label{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:10.5px;
-    letter-spacing:0.1em;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin-bottom:8px;
-  }
-  .card .value{
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:700;
-    font-size:32px;
-    line-height:1;
-  }
-  .card .value.green{color:var(--green);}
-  .card .value.amber{color:var(--amber);}
-  .card .value.red{color:var(--red);}
-  .card .unit{font-size:14px;color:var(--muted);font-weight:500;margin-left:4px;}
-
-  section{
-    background:var(--panel);
-    border:1px solid var(--panel-border);
-    border-radius:var(--radius);
-    padding:18px 20px;
-    margin-bottom:14px;
-  }
-  section h2{
-    font-family:'Space Grotesk', sans-serif;
-    font-size:14px;
-    font-weight:600;
-    margin:0 0 4px;
-  }
-  section .desc{
-    font-size:12px;
-    color:var(--muted);
-    margin:0 0 16px;
+    grid-template-columns:
+      repeat(2,1fr);
   }
 
-  /* Signature element: the "speed pulse" strip - recent alert speeds as a
-     live seismograph-style read-out, colour-coded by threshold band. */
-  .pulse{
-    display:flex;
-    align-items:flex-end;
-    gap:3px;
-    height:90px;
-    padding:6px 0;
-    border-bottom:1px solid var(--panel-border);
-  }
-  .pulse-bar{
-    flex:1 1 auto;
-    min-width:3px;
-    border-radius:2px 2px 0 0;
-    transition:height 0.3s ease;
-  }
-  .pulse-empty{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:12px;
-    color:var(--muted);
-    padding:30px 0;
-    text-align:center;
-    width:100%;
-  }
+}
 
-  .classbars{display:flex;flex-direction:column;gap:10px;}
-  .classbar-row{display:flex;align-items:center;gap:12px;}
-  .classbar-row .cname{
-    width:90px;
-    font-size:13px;
-    color:var(--muted);
-    flex-shrink:0;
-  }
-  .classbar-track{
-    flex:1;
-    height:8px;
-    background:#1B221A;
-    border-radius:4px;
-    overflow:hidden;
-  }
-  .classbar-fill{
-    height:100%;
-    background:var(--teal);
-    border-radius:4px;
-  }
-  .classbar-row .cval{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:12px;
-    width:34px;
-    text-align:right;
-    color:var(--text);
-  }
+.card{
 
-  table{width:100%;border-collapse:collapse;font-size:13px;}
-  thead th{
-    text-align:left;
-    font-family:'IBM Plex Mono', monospace;
-    font-size:10.5px;
-    letter-spacing:0.08em;
-    text-transform:uppercase;
-    color:var(--muted);
-    font-weight:500;
-    padding:0 10px 10px;
-    border-bottom:1px solid var(--panel-border);
-  }
-  tbody td{
-    padding:10px;
-    border-bottom:1px solid var(--panel-border);
-    vertical-align:middle;
-  }
-  tbody tr:last-child td{border-bottom:none;}
-  .kph-pill{
-    font-family:'IBM Plex Mono', monospace;
-    font-weight:600;
-    font-size:13px;
-    padding:2px 8px;
-    border-radius:20px;
-    display:inline-block;
-  }
-  .kph-pill.amber{background:rgba(245,166,35,0.15);color:var(--amber);}
-  .kph-pill.red{background:rgba(240,71,62,0.15);color:var(--red);}
-  .thumb{
-    width:56px;height:40px;object-fit:cover;
-    border-radius:5px;
-    border:1px solid var(--panel-border);
-    background:#1B221A;
-    display:block;
-  }
-  .thumb-empty{
-    width:56px;height:40px;border-radius:5px;
-    border:1px dashed var(--panel-border);
-    display:flex;align-items:center;justify-content:center;
-    color:var(--muted);font-size:10px;
-  }
-  .empty-state{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:12px;
-    color:var(--muted);
-    padding:20px 0;
-    text-align:center;
-  }
+  background:var(--panel);
 
-  footer{
-    text-align:center;
-    font-family:'IBM Plex Mono', monospace;
-    font-size:11px;
-    color:var(--muted);
-    margin-top:24px;
-  }
+  border:
+    1px solid var(--panel-border);
+
+  border-radius:var(--radius);
+
+  padding:16px 18px;
+}
+
+.card .label{
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:10.5px;
+
+  letter-spacing:0.1em;
+
+  text-transform:uppercase;
+
+  color:var(--muted);
+
+  margin-bottom:8px;
+}
+
+.card .value{
+
+  font-family:
+    'Space Grotesk',
+    sans-serif;
+
+  font-weight:700;
+
+  font-size:32px;
+
+  line-height:1;
+}
+
+.card .value.green{
+  color:var(--green);
+}
+
+.card .value.amber{
+  color:var(--amber);
+}
+
+.card .value.red{
+  color:var(--red);
+}
+
+.card .unit{
+
+  font-size:14px;
+
+  color:var(--muted);
+
+  font-weight:500;
+
+  margin-left:4px;
+}
+
+section{
+
+  background:var(--panel);
+
+  border:
+    1px solid var(--panel-border);
+
+  border-radius:var(--radius);
+
+  padding:18px 20px;
+
+  margin-bottom:14px;
+}
+
+section h2{
+
+  font-family:
+    'Space Grotesk',
+    sans-serif;
+
+  font-size:14px;
+
+  font-weight:600;
+
+  margin:0 0 4px;
+}
+
+section .desc{
+
+  font-size:12px;
+
+  color:var(--muted);
+
+  margin:0 0 16px;
+}
+
+
+/* ============================================================
+   VIDEO
+   ============================================================ */
+
+.video-container{
+
+  width:100%;
+
+  background:#000;
+
+  border-radius:8px;
+
+  overflow:hidden;
+
+  border:
+    1px solid var(--panel-border);
+
+  position:relative;
+
+  min-height:240px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+}
+
+#processedVideo{
+
+  display:block;
+
+  width:100%;
+
+  max-height:620px;
+
+  background:#000;
+}
+
+.video-empty{
+
+  position:absolute;
+
+  inset:0;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  flex-direction:column;
+
+  gap:8px;
+
+  color:var(--muted);
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:12px;
+
+  text-align:center;
+}
+
+.video-empty.hidden{
+  display:none;
+}
+
+.video-status{
+
+  margin-top:10px;
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:11px;
+
+  color:var(--muted);
+}
+
+
+/* ============================================================
+   PULSE
+   ============================================================ */
+
+.pulse{
+
+  display:flex;
+
+  align-items:flex-end;
+
+  gap:3px;
+
+  height:90px;
+
+  padding:6px 0;
+
+  border-bottom:
+    1px solid var(--panel-border);
+}
+
+.pulse-bar{
+
+  flex:1 1 auto;
+
+  min-width:3px;
+
+  border-radius:
+    2px 2px 0 0;
+
+  transition:
+    height 0.3s ease;
+}
+
+.pulse-empty{
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:12px;
+
+  color:var(--muted);
+
+  padding:30px 0;
+
+  text-align:center;
+
+  width:100%;
+}
+
+
+/* ============================================================
+   CLASS BARS
+   ============================================================ */
+
+.classbars{
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:10px;
+}
+
+.classbar-row{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:12px;
+}
+
+.classbar-row .cname{
+
+  width:90px;
+
+  font-size:13px;
+
+  color:var(--muted);
+
+  flex-shrink:0;
+}
+
+.classbar-track{
+
+  flex:1;
+
+  height:8px;
+
+  background:#1B221A;
+
+  border-radius:4px;
+
+  overflow:hidden;
+}
+
+.classbar-fill{
+
+  height:100%;
+
+  background:var(--teal);
+
+  border-radius:4px;
+}
+
+.classbar-row .cval{
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:12px;
+
+  width:34px;
+
+  text-align:right;
+
+  color:var(--text);
+}
+
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+
+table{
+
+  width:100%;
+
+  border-collapse:collapse;
+
+  font-size:13px;
+}
+
+thead th{
+
+  text-align:left;
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:10.5px;
+
+  letter-spacing:0.08em;
+
+  text-transform:uppercase;
+
+  color:var(--muted);
+
+  font-weight:500;
+
+  padding:
+    0 10px 10px;
+
+  border-bottom:
+    1px solid var(--panel-border);
+}
+
+tbody td{
+
+  padding:10px;
+
+  border-bottom:
+    1px solid var(--panel-border);
+
+  vertical-align:middle;
+}
+
+tbody tr:last-child td{
+  border-bottom:none;
+}
+
+.kph-pill{
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-weight:600;
+
+  font-size:13px;
+
+  padding:
+    2px 8px;
+
+  border-radius:20px;
+
+  display:inline-block;
+}
+
+.kph-pill.amber{
+
+  background:
+    rgba(245,166,35,0.15);
+
+  color:var(--amber);
+}
+
+.kph-pill.red{
+
+  background:
+    rgba(240,71,62,0.15);
+
+  color:var(--red);
+}
+
+.thumb{
+
+  width:56px;
+  height:40px;
+
+  object-fit:cover;
+
+  border-radius:5px;
+
+  border:
+    1px solid var(--panel-border);
+
+  background:#1B221A;
+
+  display:block;
+}
+
+.thumb-empty{
+
+  width:56px;
+  height:40px;
+
+  border-radius:5px;
+
+  border:
+    1px dashed var(--panel-border);
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  color:var(--muted);
+
+  font-size:10px;
+}
+
+.empty-state{
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:12px;
+
+  color:var(--muted);
+
+  padding:20px 0;
+
+  text-align:center;
+}
+
+footer{
+
+  text-align:center;
+
+  font-family:
+    'IBM Plex Mono',
+    monospace;
+
+  font-size:11px;
+
+  color:var(--muted);
+
+  margin-top:24px;
+}
+
 </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <div class="brand">
-        <div>
-          <h1>Webazi Traffic Watch</h1>
-          <div class="sub">Speed monitoring console</div>
-        </div>
-      </div>
-      <div class="status">
-        <span class="dot" id="liveDot"></span>
-        <span id="liveLabel">connecting…</span>
-        <span>·</span>
-        <span id="uptime">uptime 00:00:00</span>
-      </div>
-    </header>
 
-    <div class="grid">
-      <div class="card">
-        <div class="label">Average speed</div>
-        <div class="value" id="avgKph">–<span class="unit">km/h</span></div>
+</head>
+
+
+<body>
+
+<div class="wrap">
+
+<header>
+
+  <div class="brand">
+
+    <div>
+
+      <h1>Webazi Traffic Watch</h1>
+
+      <div class="sub">
+        Speed monitoring console
       </div>
-      <div class="card">
-        <div class="label">Top speed recorded</div>
-        <div class="value" id="maxKph">–<span class="unit">km/h</span></div>
-      </div>
-      <div class="card">
-        <div class="label">Vehicles tracked</div>
-        <div class="value" id="totalVehicles">–</div>
-      </div>
-      <div class="card">
-        <div class="label">Speeding alerts</div>
-        <div class="value" id="alertCount">–</div>
-      </div>
+
     </div>
 
-    <section>
-      <h2>Speed pulse</h2>
-      <p class="desc">The last speeding alerts, in order — bar height and colour track how far each vehicle was over the limit.</p>
-      <div class="pulse" id="pulse"><div class="pulse-empty">No alerts yet</div></div>
-    </section>
-
-    <section>
-      <h2>Traffic by vehicle class</h2>
-      <p class="desc">Vehicles counted since this run started.</p>
-      <div class="classbars" id="classbars"><div class="empty-state">No vehicles counted yet</div></div>
-    </section>
-
-    <section>
-      <h2>Alert log</h2>
-      <p class="desc">Most recent speeding events, newest first.</p>
-      <table>
-        <thead>
-          <tr><th>Time</th><th>Class</th><th>Speed</th><th>Snapshot</th></tr>
-        </thead>
-        <tbody id="alertRows">
-          <tr><td colspan="4" class="empty-state">No alerts yet</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <footer>Refreshes every 8s · Webazi Digital Solutions</footer>
   </div>
 
+
+  <div class="status">
+
+    <span
+      class="dot"
+      id="liveDot"
+    ></span>
+
+    <span id="liveLabel">
+      connecting…
+    </span>
+
+    <span>·</span>
+
+    <span id="uptime">
+      uptime 00:00:00
+    </span>
+
+  </div>
+
+</header>
+
+
+<!-- ========================================================
+     PROCESSED VIDEO
+     ======================================================== -->
+
+<section>
+
+  <h2>Processed traffic video</h2>
+
+  <p class="desc">
+    YOLO vehicle detection, tracking and calculated speeds.
+  </p>
+
+
+  <div class="video-container">
+
+    <video
+      id="processedVideo"
+      controls
+      preload="metadata"
+      playsinline
+    >
+      <source
+        id="videoSource"
+        src="/processed-video"
+        type="video/mp4"
+      >
+
+      Your browser does not support HTML5 video.
+    </video>
+
+
+    <div
+      id="videoEmpty"
+      class="video-empty hidden"
+    >
+
+      <div>
+        Processed video is not available yet.
+      </div>
+
+      <div>
+        The tracker is still preparing output_speed.mp4.
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div
+    id="videoStatus"
+    class="video-status"
+  >
+    Checking processed video…
+  </div>
+
+</section>
+
+
+<!-- ========================================================
+     STATISTICS
+     ======================================================== -->
+
+<div class="grid">
+
+  <div class="card">
+
+    <div class="label">
+      Average speed
+    </div>
+
+    <div
+      class="value"
+      id="avgKph"
+    >
+      –<span class="unit">
+        km/h
+      </span>
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="label">
+      Top speed recorded
+    </div>
+
+    <div
+      class="value"
+      id="maxKph"
+    >
+      –<span class="unit">
+        km/h
+      </span>
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="label">
+      Vehicles tracked
+    </div>
+
+    <div
+      class="value"
+      id="totalVehicles"
+    >
+      –
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="label">
+      Speeding alerts
+    </div>
+
+    <div
+      class="value"
+      id="alertCount"
+    >
+      –
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ========================================================
+     SPEED PULSE
+     ======================================================== -->
+
+<section>
+
+  <h2>Speed pulse</h2>
+
+  <p class="desc">
+    The last speeding alerts, in order.
+  </p>
+
+  <div
+    class="pulse"
+    id="pulse"
+  >
+
+    <div class="pulse-empty">
+      No alerts yet
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ========================================================
+     VEHICLE CLASSES
+     ======================================================== -->
+
+<section>
+
+  <h2>
+    Traffic by vehicle class
+  </h2>
+
+  <p class="desc">
+    Vehicles counted since this run started.
+  </p>
+
+  <div
+    class="classbars"
+    id="classbars"
+  >
+
+    <div class="empty-state">
+      No vehicles counted yet
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ========================================================
+     ALERT LOG
+     ======================================================== -->
+
+<section>
+
+  <h2>
+    Alert log
+  </h2>
+
+  <p class="desc">
+    Most recent speeding events, newest first.
+  </p>
+
+
+  <table>
+
+    <thead>
+
+      <tr>
+
+        <th>Time</th>
+
+        <th>Class</th>
+
+        <th>Speed</th>
+
+        <th>Snapshot</th>
+
+      </tr>
+
+    </thead>
+
+
+    <tbody id="alertRows">
+
+      <tr>
+
+        <td
+          colspan="4"
+          class="empty-state"
+        >
+          No alerts yet
+        </td>
+
+      </tr>
+
+    </tbody>
+
+  </table>
+
+</section>
+
+
+<footer>
+  Refreshes every 8s · Webazi Digital Solutions
+</footer>
+
+</div>
+
+
 <script>
+
 const GREEN_MAX = 60;
+
 const AMBER_MAX = 100;
 
+
+/* ============================================================
+   Speed classification
+   ============================================================ */
+
 function kphClass(kph){
-  if (kph >= AMBER_MAX) return 'red';
-  if (kph >= GREEN_MAX) return 'amber';
+
+  if(kph >= AMBER_MAX){
+    return 'red';
+  }
+
+  if(kph >= GREEN_MAX){
+    return 'amber';
+  }
+
   return 'green';
 }
 
+
+/* ============================================================
+   Uptime
+   ============================================================ */
+
 function fmtUptime(s){
-  const h = String(Math.floor(s/3600)).padStart(2,'0');
-  const m = String(Math.floor((s%3600)/60)).padStart(2,'0');
-  const sec = String(s%60).padStart(2,'0');
+
+  const h = String(
+    Math.floor(s / 3600)
+  ).padStart(2,'0');
+
+  const m = String(
+    Math.floor(
+      (s % 3600) / 60
+    )
+  ).padStart(2,'0');
+
+  const sec = String(
+    s % 60
+  ).padStart(2,'0');
+
   return `uptime ${h}:${m}:${sec}`;
 }
 
-async function refresh(){
-  let data;
-  try {
-    const res = await fetch('/api/stats');
-    data = await res.json();
-  } catch (e) {
-    document.getElementById('liveLabel').textContent = 'dashboard offline';
-    document.getElementById('liveDot').classList.remove('on');
-    return;
-  }
 
-  const dot = document.getElementById('liveDot');
-  const label = document.getElementById('liveLabel');
-  if (data.live) {
-    dot.classList.add('on');
-    label.textContent = `live · updated ${data.last_update}`;
-  } else {
-    dot.classList.remove('on');
-    label.textContent = `no recent data · last update ${data.last_update}`;
-  }
-  document.getElementById('uptime').textContent = fmtUptime(data.uptime_s);
+/* ============================================================
+   Processed video
+   ============================================================ */
 
-  const avgEl = document.getElementById('avgKph');
-  avgEl.innerHTML = `${data.avg_kph}<span class="unit">km/h</span>`;
-  avgEl.className = 'value ' + kphClass(data.avg_kph);
+async function refreshVideo(){
 
-  const maxEl = document.getElementById('maxKph');
-  maxEl.innerHTML = `${data.max_kph}<span class="unit">km/h</span>`;
-  maxEl.className = 'value ' + kphClass(data.max_kph);
+  const video =
+    document.getElementById(
+      'processedVideo'
+    );
 
-  document.getElementById('totalVehicles').textContent = data.total_vehicles;
-  document.getElementById('alertCount').textContent = data.alert_count;
+  const empty =
+    document.getElementById(
+      'videoEmpty'
+    );
 
-  // Pulse strip
-  const pulseEl = document.getElementById('pulse');
-  if (data.pulse && data.pulse.length){
-    const maxVal = Math.max(...data.pulse, AMBER_MAX);
-    pulseEl.innerHTML = data.pulse.map(kph => {
-      const h = Math.max(6, Math.round((kph / maxVal) * 84));
-      const cls = kphClass(kph);
-      const color = cls === 'red' ? 'var(--red)' : cls === 'amber' ? 'var(--amber)' : 'var(--green)';
-      return `<div class="pulse-bar" style="height:${h}px;background:${color}" title="${kph} km/h"></div>`;
-    }).join('');
-  } else {
-    pulseEl.innerHTML = '<div class="pulse-empty">No alerts yet</div>';
-  }
+  const status =
+    document.getElementById(
+      'videoStatus'
+    );
 
-  // Class breakdown
-  const cb = document.getElementById('classbars');
-  const entries = Object.entries(data.class_counts || {});
-  if (entries.length){
-    const maxCount = Math.max(...entries.map(e => e[1]));
-    cb.innerHTML = entries.sort((a,b)=>b[1]-a[1]).map(([name, count]) => `
-      <div class="classbar-row">
-        <div class="cname">${name}</div>
-        <div class="classbar-track"><div class="classbar-fill" style="width:${(count/maxCount*100).toFixed(0)}%"></div></div>
-        <div class="cval">${count}</div>
-      </div>`).join('');
-  } else {
-    cb.innerHTML = '<div class="empty-state">No vehicles counted yet</div>';
-  }
+  try{
 
-  // Alert table
-  const rows = document.getElementById('alertRows');
-  if (data.alerts && data.alerts.length){
-    rows.innerHTML = data.alerts.map(a => {
-      const cls = kphClass(a.kph);
-      const pillCls = cls === 'green' ? '' : cls;
-      const thumb = a.snapshot
-        ? `<img class="thumb" src="/snapshots/${a.snapshot}" loading="lazy">`
-        : `<div class="thumb-empty">—</div>`;
-      return `<tr>
-        <td>${a.timestamp}</td>
-        <td>${a.class}</td>
-        <td><span class="kph-pill ${pillCls}">${a.kph} km/h</span></td>
-        <td>${thumb}</td>
-      </tr>`;
-    }).join('');
-  } else {
-    rows.innerHTML = '<tr><td colspan="4" class="empty-state">No alerts yet</td></tr>';
+    const response =
+      await fetch(
+        '/api/video-status',
+        {
+          cache:'no-store'
+        }
+      );
+
+    if(!response.ok){
+      throw new Error(
+        'Video status request failed'
+      );
+    }
+
+    const data =
+      await response.json();
+
+
+    if(data.available){
+
+      empty.classList.add(
+        'hidden'
+      );
+
+      video.style.display =
+        'block';
+
+      status.textContent =
+        'Processed video available.';
+
+
+      /*
+       * Add a cache-busting query parameter.
+       * This makes the browser request the
+       * newest generated video.
+       */
+
+      const currentSrc =
+        `/processed-video?t=${Date.now()}`;
+
+      const source =
+        document.getElementById(
+          'videoSource'
+        );
+
+      if(
+        source.getAttribute('src')
+        !== currentSrc
+      ){
+
+        source.setAttribute(
+          'src',
+          currentSrc
+        );
+
+        video.load();
+      }
+
+    }else{
+
+      video.style.display =
+        'none';
+
+      empty.classList.remove(
+        'hidden'
+      );
+
+      status.textContent =
+        'Waiting for processed video…';
+    }
+
+  }catch(error){
+
+    video.style.display =
+      'none';
+
+    empty.classList.remove(
+      'hidden'
+    );
+
+    status.textContent =
+      'Unable to check processed video.';
   }
 }
 
+
+/* ============================================================
+   Dashboard refresh
+   ============================================================ */
+
+async function refresh(){
+
+  let data;
+
+
+  try{
+
+    const res =
+      await fetch(
+        '/api/stats',
+        {
+          cache:'no-store'
+        }
+      );
+
+
+    if(!res.ok){
+      throw new Error(
+        'Stats request failed'
+      );
+    }
+
+
+    data =
+      await res.json();
+
+
+  }catch(e){
+
+    document.getElementById(
+      'liveLabel'
+    ).textContent =
+      'dashboard offline';
+
+
+    document.getElementById(
+      'liveDot'
+    ).classList.remove(
+      'on'
+    );
+
+    return;
+  }
+
+
+  /* ========================================================
+     Live indicator
+     ======================================================== */
+
+  const dot =
+    document.getElementById(
+      'liveDot'
+    );
+
+  const label =
+    document.getElementById(
+      'liveLabel'
+    );
+
+
+  if(data.live){
+
+    dot.classList.add('on');
+
+    label.textContent =
+      `live · updated ${data.last_update}`;
+
+  }else{
+
+    dot.classList.remove('on');
+
+    label.textContent =
+      `no recent data · last update ${data.last_update}`;
+  }
+
+
+  document.getElementById(
+    'uptime'
+  ).textContent =
+    fmtUptime(data.uptime_s);
+
+
+  /* ========================================================
+     Speed cards
+     ======================================================== */
+
+  const avgEl =
+    document.getElementById(
+      'avgKph'
+    );
+
+  avgEl.innerHTML =
+    `${data.avg_kph}<span class="unit">km/h</span>`;
+
+  avgEl.className =
+    'value ' +
+    kphClass(
+      data.avg_kph
+    );
+
+
+  const maxEl =
+    document.getElementById(
+      'maxKph'
+    );
+
+  maxEl.innerHTML =
+    `${data.max_kph}<span class="unit">km/h</span>`;
+
+  maxEl.className =
+    'value ' +
+    kphClass(
+      data.max_kph
+    );
+
+
+  document.getElementById(
+    'totalVehicles'
+  ).textContent =
+    data.total_vehicles;
+
+
+  document.getElementById(
+    'alertCount'
+  ).textContent =
+    data.alert_count;
+
+
+  /* ========================================================
+     Speed pulse
+     ======================================================== */
+
+  const pulseEl =
+    document.getElementById(
+      'pulse'
+    );
+
+
+  if(
+    data.pulse &&
+    data.pulse.length
+  ){
+
+    const maxVal =
+      Math.max(
+        ...data.pulse,
+        AMBER_MAX
+      );
+
+
+    pulseEl.innerHTML =
+      data.pulse
+        .map(kph => {
+
+          const h =
+            Math.max(
+              6,
+              Math.round(
+                (kph / maxVal) * 84
+              )
+            );
+
+
+          const cls =
+            kphClass(kph);
+
+
+          const color =
+            cls === 'red'
+              ? 'var(--red)'
+              : cls === 'amber'
+                ? 'var(--amber)'
+                : 'var(--green)';
+
+
+          return `
+            <div
+              class="pulse-bar"
+              style="height:${h}px;background:${color}"
+              title="${kph} km/h"
+            ></div>
+          `;
+
+        })
+        .join('');
+
+  }else{
+
+    pulseEl.innerHTML =
+      '<div class="pulse-empty">No alerts yet</div>';
+  }
+
+
+  /* ========================================================
+     Vehicle class breakdown
+     ======================================================== */
+
+  const cb =
+    document.getElementById(
+      'classbars'
+    );
+
+
+  const entries =
+    Object.entries(
+      data.class_counts || {}
+    );
+
+
+  if(entries.length){
+
+    const maxCount =
+      Math.max(
+        ...entries.map(
+          e => e[1]
+        )
+      );
+
+
+    cb.innerHTML =
+      entries
+        .sort(
+          (a,b) => b[1] - a[1]
+        )
+        .map(
+          ([name,count]) => `
+
+            <div class="classbar-row">
+
+              <div class="cname">
+                ${name}
+              </div>
+
+              <div class="classbar-track">
+
+                <div
+                  class="classbar-fill"
+                  style="
+                    width:${
+                      (
+                        count /
+                        maxCount *
+                        100
+                      ).toFixed(0)
+                    }%
+                  "
+                ></div>
+
+              </div>
+
+              <div class="cval">
+                ${count}
+              </div>
+
+            </div>
+
+          `
+        )
+        .join('');
+
+  }else{
+
+    cb.innerHTML =
+      '<div class="empty-state">No vehicles counted yet</div>';
+  }
+
+
+  /* ========================================================
+     Alert table
+     ======================================================== */
+
+  const rows =
+    document.getElementById(
+      'alertRows'
+    );
+
+
+  if(
+    data.alerts &&
+    data.alerts.length
+  ){
+
+    rows.innerHTML =
+      data.alerts
+        .map(a => {
+
+          const cls =
+            kphClass(
+              a.kph
+            );
+
+
+          const pillCls =
+            cls === 'green'
+              ? ''
+              : cls;
+
+
+          const thumb =
+            a.snapshot
+
+              ? `
+                <img
+                  class="thumb"
+                  src="/snapshots/${encodeURIComponent(a.snapshot)}"
+                  loading="lazy"
+                  alt="Speeding vehicle"
+                >
+              `
+
+              : `
+                <div class="thumb-empty">
+                  —
+                </div>
+              `;
+
+
+          return `
+
+            <tr>
+
+              <td>
+                ${a.timestamp}
+              </td>
+
+              <td>
+                ${a.class}
+              </td>
+
+              <td>
+
+                <span
+                  class="kph-pill ${pillCls}"
+                >
+                  ${a.kph} km/h
+                </span>
+
+              </td>
+
+              <td>
+                ${thumb}
+              </td>
+
+            </tr>
+
+          `;
+
+        })
+        .join('');
+
+  }else{
+
+    rows.innerHTML =
+      `
+        <tr>
+          <td
+            colspan="4"
+            class="empty-state"
+          >
+            No alerts yet
+          </td>
+        </tr>
+      `;
+  }
+
+}
+
+
+/* ============================================================
+   Initial load
+   ============================================================ */
+
 refresh();
-setInterval(refresh, 8000);
+
+refreshVideo();
+
+
+/* ============================================================
+   Automatic refresh
+   ============================================================ */
+
+setInterval(
+  refresh,
+  8000
+);
+
+setInterval(
+  refreshVideo,
+  15000
+);
+
 </script>
+
 </body>
+
 </html>
