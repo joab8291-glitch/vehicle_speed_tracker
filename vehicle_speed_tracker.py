@@ -25,12 +25,21 @@ import os
 import re
 import sys
 import time
-
-# Configure Ultralytics before importing YOLO
-os.environ["YOLO_CONFIG_DIR"] = "/tmp/Ultralytics"
-
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
+
+# ------------------------------------------------------------------------
+# Ultralytics configuration
+# ------------------------------------------------------------------------
+# Render's /tmp directory is writable. This prevents:
+# WARNING ⚠️ user config directory '/tmp/Ultralytics/Ultralytics'
+# is not writable, using '/tmp/Ultralytics'.
+#
+# IMPORTANT: this must be set BEFORE importing ultralytics.
+os.environ["YOLO_CONFIG_DIR"] = "/tmp/Ultralytics"
+
+# Make sure the directory exists.
+os.makedirs("/tmp/Ultralytics", exist_ok=True)
 
 import cv2
 import numpy as np
