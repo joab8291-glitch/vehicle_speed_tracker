@@ -36,10 +36,9 @@ from datetime import datetime, timedelta
 # is not writable, using '/tmp/Ultralytics'.
 #
 # IMPORTANT: this must be set BEFORE importing ultralytics.
-os.environ["YOLO_CONFIG_DIR"] = "/tmp/Ultralytics"
-
-# Make sure the directory exists.
-os.makedirs("/tmp/Ultralytics", exist_ok=True)
+YOLO_CONFIG_DIR = "/tmp/Ultralytics"
+os.environ["YOLO_CONFIG_DIR"] = YOLO_CONFIG_DIR
+os.makedirs(YOLO_CONFIG_DIR, exist_ok=True)
 
 import cv2
 import numpy as np
