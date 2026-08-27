@@ -7,7 +7,7 @@ TRACKER_PID=$!
 
 echo "Starting dashboard on port 10000..."
 cd /app
-gunicorn --bind 0.0.0.0:10000 --workers 2 dashboard.app:app &
+gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 2 dashboard.app:app &
 DASH_PID=$!
 
 # Wait for either process to exit
