@@ -69,7 +69,7 @@ ENV_VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 DEFAULT_CONFIG = {
     "source": "video.mp4",
     "output": None,
-    "log": "speed_log.csv",
+    "log": os.getenv("SPEED_LOG_PATH", "/app/data/speed_log.csv"),
     "model": "yolov8n.pt",
     "device": "cpu",
     "imgsz": 640,
