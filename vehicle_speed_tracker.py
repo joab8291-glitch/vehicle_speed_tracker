@@ -98,14 +98,15 @@ DEFAULT_CONFIG = {
     "csv_path": os.getenv("COUNTS_LOG_PATH", "/app/data/vehicle_counts.csv")
 },
     "alerts": {
-        "enabled": False,
-        "speed_kph_threshold": 100,
-        "webhook_url": None,
-        "telegram_bot_token": None,
-        "telegram_chat_id": None,
-        "snapshot_dir": "snapshots",
-        "save_full_frame": True,
-        "log_path": "alerts.csv",
+    "enabled": False,
+    "speed_kph_threshold": 100,
+    "webhook_url": None,
+    "telegram_bot_token": os.getenv("TELEGRAM_BOT_TOKEN"),
+    "telegram_chat_id": os.getenv("TELEGRAM_CHAT_ID"),
+    "snapshot_dir": os.getenv("SNAPSHOT_DIR", "/app/data/snapshots"),
+    "save_full_frame": True,
+    "log_path": os.getenv("ALERTS_LOG_PATH", "/app/data/alerts.csv"),
+},
     },
     # 24/7 operation: writing one continuously-growing file fills the disk eventually.
     # This rotates the output video into fixed-length segments and deletes old ones.
