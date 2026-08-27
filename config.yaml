@@ -1,60 +1,140 @@
-# config.yaml
-# Currently using recorded video.
-# When you are ready for CCTV, change the source line below
-# and set RTSP_USER, RTSP_PASS, RTSP_HOST in Render Environment.
+# ============================================================
+# Webazi Vehicle Speed Tracker - Render Configuration
+# ============================================================
 
+# ------------------------------------------------------------
+# VIDEO / CAMERA SOURCE
+# ------------------------------------------------------------
+
+# Current testing source
 source: video.mp4
 
-# Ready-to-use RTSP line (just uncomment and comment the video line above):
-# source: "rtsp://\( {RTSP_USER}: \){RTSP_PASS}@${RTSP_HOST}:554/Streaming/Channels/101"
+# For live CCTV, replace the source above with your RTSP URL.
+# Credentials are supplied through Render environment variables.
+#
+# source: "rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST}:554/Streaming/Channels/101"
+
+
+# ------------------------------------------------------------
+# OUTPUT
+# ------------------------------------------------------------
 
 output: null
-log: speed_log.csv
+
+# Persistent Render disk
+log: /app/data/speed_log.csv
+
 model: /app/yolov8n.pt
+
 device: cpu
+
 imgsz: 416
+
 process_every: 2
+
 display: false
+
+
+# ------------------------------------------------------------
+# CAMERA / ROAD CALIBRATION
+# ------------------------------------------------------------
 
 camera:
   lane_width_m: 3.75
+
   num_lanes_left: 5
+
   num_lanes_right: 3
+
   bev_scale: 18
+
   visible_length_m: 70
-  src_road_l: [[155, 415], [600, 395], [845, 1079], [0, 1079]]
-  src_road_r: [[845, 395], [1140, 395], [1220, 1079], [900, 1079]]
+
+  src_road_l:
+    - [155, 415]
+    - [600, 395]
+    - [845, 1079]
+    - [0, 1079]
+
+  src_road_r:
+    - [845, 395]
+    - [1140, 395]
+    - [1220, 1079]
+    - [900, 1079]
+
   undistort:
     enabled: false
     camera_matrix: null
     dist_coeffs: null
 
+
+# ------------------------------------------------------------
+# VEHICLE TRACKING
+# ------------------------------------------------------------
+
 tracking:
-  tracker_yaml: bytetrack_custom.yaml
+  tracker_yaml: /app/bytetrack_custom.yaml
+
   min_track_frames: 8
+
   history_len: 25
+
   max_plausible_kph: 200
+
   min_plausible_kph: 2
+
+
+# ------------------------------------------------------------
+# SPEED THRESHOLDS
+# ------------------------------------------------------------
 
 speed_thresholds:
   green_kph: 60
+
   yellow_kph: 100
+
+
+# ------------------------------------------------------------
+# VEHICLE COUNTING
+# ------------------------------------------------------------
 
 counting:
   enabled: true
-  csv_path: vehicle_counts.csv
+
+  csv_path: /app/data/vehicle_counts.csv
+
+
+# ------------------------------------------------------------
+# SPEED ALERTS
+# ------------------------------------------------------------
 
 alerts:
   enabled: false
+
   speed_kph_threshold: 100
+
   webhook_url: null
+
   telegram_bot_token: null
+
   telegram_chat_id: null
-  snapshot_dir: snapshots
+
+  snapshot_dir: /app/data/snapshots
+
   save_full_frame: true
+
+  log_path: /app/data/alerts.csv
+
+
+# ------------------------------------------------------------
+# VIDEO RECORDING
+# ------------------------------------------------------------
 
 recording:
   enabled: false
-  output_dir: recordings
+
+  output_dir: /app/data/recordings
+
   segment_minutes: 60
+
   retention_days: 7
