@@ -1,22 +1,12 @@
 """
-dashboard/app.py
-
-Webazi Traffic Watch dashboard.
-
-Displays:
-- Processed YOLO video
-- Vehicle statistics
-- Vehicle counts
-- Speeding alerts
-- Alert snapshots
-
-The dashboard reads the same files written by vehicle_speed_tracker.py.
+Webazi Traffic Watch Dashboard
 """
 
 import csv
 import hmac
 import os
 import time
+
 from datetime import datetime
 from functools import wraps
 
@@ -25,14 +15,14 @@ from flask import (
     jsonify,
     render_template,
     send_from_directory,
-    abort,
     request,
     Response,
-    send_file,
+    abort,
 )
 
+
 # ============================================================
-# Paths
+# PATHS
 # ============================================================
 
 SPEED_LOG_PATH = os.environ.get(
@@ -55,17 +45,21 @@ SNAPSHOT_DIR = os.environ.get(
     "/app/data/snapshots"
 )
 
-# Processed video created by vehicle_speed_tracker.py
-PROCESSED_VIDEO_PATH = os.environ.get(
-    "PROCESSED_VIDEO_PATH",
-    "/app/output_speed.mp4"
+VIDEO_PATH = os.environ.get(
+    "VIDEO_PATH",
+    "/app/data/output_speed.mp4"
+)
+
+INPUT_VIDEO_PATH = os.environ.get(
+    "INPUT_VIDEO_PATH",
+    "/app/video.mp4"
 )
 
 MAX_ALERTS_SHOWN = 30
 
 
 # ============================================================
-# Dashboard authentication
+# AUTH
 # ============================================================
 
 DASHBOARD_USER = os.environ.get(
@@ -78,26 +72,33 @@ DASHBOARD_PASS = os.environ.get(
 )
 
 if not DASHBOARD_PASS:
+
     raise SystemExit(
-        "DASHBOARD_PASS environment variable is not set. "
-        "Refusing to start an unprotected dashboard."
+        "DASHBOARD_PASS environment variable "
+        "is not set."
     )
 
 
 # ============================================================
-# Flask
+# FLASK
 # ============================================================
 
 START_TIME = time.time()
 
-app = Flask(__name__)
+app = Flask(
+    __name__
+)
 
 
 # ============================================================
-# Authentication
+# AUTH FUNCTIONS
 # ============================================================
 
-def _check_auth(username, password):
+def _check_auth(
+    username,
+    password
+):
+
     return (
         hmac.compare_digest(
             username or "",
@@ -112,31 +113,42 @@ def _check_auth(username, password):
 
 
 def require_auth(view):
+
     @wraps(view)
-    def wrapped(*args, **kwargs):
+    def wrapped(
+        *args,
+        **kwargs
+    ):
 
         auth = request.authorization
 
-        if not auth or not _check_auth(
-            auth.username,
-            auth.password
+        if (
+            not auth
+            or not _check_auth(
+                auth.username,
+                auth.password
+            )
         ):
+
             return Response(
                 "Authentication required.",
                 401,
                 {
                     "WWW-Authenticate":
                     'Basic realm="Webazi Traffic Watch"'
-                },
+                }
             )
 
-        return view(*args, **kwargs)
+        return view(
+            *args,
+            **kwargs
+        )
 
     return wrapped
 
 
 # ============================================================
-# CSV helpers
+# CSV
 # ============================================================
 
 def _read_csv(path):
@@ -145,15 +157,19 @@ def _read_csv(path):
         return []
 
     try:
+
         with open(
             path,
             newline="",
             encoding="utf-8"
         ) as f:
-            return list(csv.DictReader(f))
 
-    except Exception as e:
-        print(f"CSV read error for {path}: {e}")
+            return list(
+                csv.DictReader(f)
+            )
+
+    except Exception:
+
         return []
 
 
@@ -163,21 +179,31 @@ def _file_age_seconds(path):
         return None
 
     try:
-        return time.time() - os.path.getmtime(path)
-
-    except OSError:
+        return (
+            time.time()
+            - os.path.getmtime(path)
+        )
+    except Exception:
         return None
 
 
 # ============================================================
-# Dashboard statistics
+# STATS
 # ============================================================
 
 def build_stats():
 
-    speed_rows = _read_csv(SPEED_LOG_PATH)
-    count_rows = _read_csv(COUNTS_LOG_PATH)
-    alert_rows = _read_csv(ALERTS_LOG_PATH)
+    speed_rows = _read_csv(
+        SPEED_LOG_PATH
+    )
+
+    count_rows = _read_csv(
+        COUNTS_LOG_PATH
+    )
+
+    alert_rows = _read_csv(
+        ALERTS_LOG_PATH
+    )
 
     avg_kphs = []
 
@@ -186,19 +212,26 @@ def build_stats():
     for row in speed_rows:
 
         try:
+
             if row.get("avg_kph"):
                 avg_kphs.append(
-                    float(row["avg_kph"])
+                    float(
+                        row["avg_kph"]
+                    )
                 )
 
             if row.get("max_kph"):
                 max_kphs.append(
-                    float(row["max_kph"])
+                    float(
+                        row["max_kph"]
+                    )
                 )
 
-        except (ValueError, TypeError):
-            continue
-
+        except (
+            ValueError,
+            TypeError
+        ):
+            pass
 
     class_counts = {}
 
@@ -211,148 +244,161 @@ def build_stats():
                 "Unknown"
             )
 
-            class_counts[class_name] = int(
-                row.get("count", 0)
+            count = int(
+                row.get(
+                    "count",
+                    0
+                )
             )
 
-        except (ValueError, TypeError):
-            continue
+            class_counts[
+                class_name
+            ] = count
 
+        except (
+            ValueError,
+            TypeError
+        ):
+            pass
 
     total_vehicles = sum(
         class_counts.values()
     )
 
-
     alerts = sorted(
         alert_rows,
-        key=lambda r: r.get(
+        key=lambda row:
+        row.get(
             "timestamp",
             ""
         ),
         reverse=True
-    )[:MAX_ALERTS_SHOWN]
-
+    )[
+        :MAX_ALERTS_SHOWN
+    ]
 
     for alert in alerts:
 
         try:
+
             alert["kph"] = float(
-                alert.get("kph", 0)
+                alert.get(
+                    "kph",
+                    0
+                )
             )
 
-        except (ValueError, TypeError):
+        except (
+            ValueError,
+            TypeError
+        ):
+
             alert["kph"] = 0
 
-
     pulse = [
-        float(alert["kph"])
-        for alert in reversed(alerts)
-        if alert.get("kph") is not None
+        float(
+            row["kph"]
+        )
+        for row in reversed(
+            alerts
+        )
+        if row.get("kph")
     ]
-
 
     log_age = _file_age_seconds(
         SPEED_LOG_PATH
     )
 
-    # Tracker writes logs every 30 seconds
     is_live = (
         log_age is not None
         and log_age < 90
     )
 
+    output_exists = os.path.isfile(
+        VIDEO_PATH
+    )
+
+    input_exists = os.path.isfile(
+        INPUT_VIDEO_PATH
+    )
 
     uptime_s = int(
-        time.time() - START_TIME
+        time.time()
+        - START_TIME
     )
-
-
-    video_exists = os.path.isfile(
-        PROCESSED_VIDEO_PATH
-    )
-
-    video_size = (
-        os.path.getsize(
-            PROCESSED_VIDEO_PATH
-        )
-        if video_exists
-        else 0
-    )
-
-
-    video_mtime = (
-        os.path.getmtime(
-            PROCESSED_VIDEO_PATH
-        )
-        if video_exists
-        else None
-    )
-
 
     return {
+
         "live": is_live,
 
-        "last_update": datetime.now().strftime(
-            "%H:%M:%S"
-        ),
+        "last_update":
+            datetime.now().strftime(
+                "%H:%M:%S"
+            ),
 
-        "uptime_s": uptime_s,
+        "uptime_s":
+            uptime_s,
 
-        "total_vehicles": total_vehicles,
+        "total_vehicles":
+            total_vehicles,
 
-        "class_counts": class_counts,
+        "class_counts":
+            class_counts,
 
-        "avg_kph": round(
-            sum(avg_kphs) / len(avg_kphs),
-            1
-        ) if avg_kphs else 0,
-
-        "max_kph": round(
-            max(max_kphs),
-            1
-        ) if max_kphs else 0,
-
-        "tracked_vehicles": len(
-            speed_rows
-        ),
-
-        "alert_count": len(
-            alert_rows
-        ),
-
-        "alerts": alerts,
-
-        "pulse": pulse,
-
-        "video_available": video_exists,
-
-        "video_size": video_size,
-
-        "video_modified": (
-            datetime.fromtimestamp(
-                video_mtime
-            ).strftime(
-                "%Y-%m-%d %H:%M:%S"
+        "avg_kph":
+            round(
+                sum(avg_kphs)
+                / len(avg_kphs),
+                1
             )
-            if video_mtime
-            else None
-        ),
+            if avg_kphs
+            else 0,
+
+        "max_kph":
+            round(
+                max(max_kphs),
+                1
+            )
+            if max_kphs
+            else 0,
+
+        "tracked_vehicles":
+            len(speed_rows),
+
+        "alert_count":
+            len(alert_rows),
+
+        "alerts":
+            alerts,
+
+        "pulse":
+            pulse,
+
+        "video_exists":
+            output_exists,
+
+        "input_video_exists":
+            input_exists,
+
+        "video_path":
+            VIDEO_PATH,
     }
 
 
 # ============================================================
-# Health check
+# HEALTH
 # ============================================================
 
-@app.route("/health")
+@app.route(
+    "/health"
+)
 def health():
 
     return "OK", 200
 
 
 # ============================================================
-# Dashboard
+# DASHBOARD
 # ============================================================
 
 @app.route("/")
@@ -365,10 +411,12 @@ def index():
 
 
 # ============================================================
-# Statistics API
+# API
 # ============================================================
 
-@app.route("/api/stats")
+@app.route(
+    "/api/stats"
+)
 @require_auth
 def api_stats():
 
@@ -378,73 +426,98 @@ def api_stats():
 
 
 # ============================================================
-# Processed video
+# PROCESSED VIDEO
 # ============================================================
 
-@app.route("/processed-video")
+@app.route(
+    "/video"
+)
 @require_auth
-def processed_video():
+def video():
 
     if not os.path.isfile(
-        PROCESSED_VIDEO_PATH
+        VIDEO_PATH
     ):
-        abort(404)
 
-    response = send_file(
-        PROCESSED_VIDEO_PATH,
+        return (
+            "Processed video is not "
+            "available yet.",
+            404
+        )
+
+    directory = os.path.dirname(
+        VIDEO_PATH
+    )
+
+    filename = os.path.basename(
+        VIDEO_PATH
+    )
+
+    response = send_from_directory(
+        directory,
+        filename,
         mimetype="video/mp4",
-        conditional=True,
-        max_age=0,
+        conditional=True
     )
 
     response.headers[
         "Cache-Control"
-    ] = "no-cache, no-store, must-revalidate"
+    ] = "no-cache"
 
     return response
 
 
 # ============================================================
-# Video status
+# ORIGINAL VIDEO
 # ============================================================
 
-@app.route("/api/video-status")
+@app.route(
+    "/input-video"
+)
 @require_auth
-def video_status():
+def input_video():
 
     if not os.path.isfile(
-        PROCESSED_VIDEO_PATH
+        INPUT_VIDEO_PATH
     ):
-        return jsonify({
-            "available": False
-        })
 
-    stat = os.stat(
-        PROCESSED_VIDEO_PATH
+        return (
+            "Input video not found.",
+            404
+        )
+
+    directory = os.path.dirname(
+        INPUT_VIDEO_PATH
     )
 
-    return jsonify({
-        "available": True,
-        "size": stat.st_size,
-        "modified": datetime.fromtimestamp(
-            stat.st_mtime
-        ).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        ),
-    })
+    filename = os.path.basename(
+        INPUT_VIDEO_PATH
+    )
+
+    return send_from_directory(
+        directory,
+        filename,
+        mimetype="video/mp4",
+        conditional=True
+    )
 
 
 # ============================================================
-# Snapshots
+# SNAPSHOTS
 # ============================================================
 
-@app.route("/snapshots/<path:filename>")
+@app.route(
+    "/snapshots/<path:filename>"
+)
 @require_auth
-def snapshots(filename):
+def snapshots(
+    filename
+):
 
     if not os.path.isdir(
         SNAPSHOT_DIR
     ):
+
         abort(404)
 
     return send_from_directory(
@@ -454,7 +527,7 @@ def snapshots(filename):
 
 
 # ============================================================
-# Local development
+# RUN
 # ============================================================
 
 if __name__ == "__main__":
