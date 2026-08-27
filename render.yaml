@@ -27,7 +27,7 @@ services:
     dockerfilePath: ./Dockerfile
     plan: standard          # CPU inference needs more than the free/starter tier; bump to pro if it can't keep up in real time
     autoDeploy: true
-    healthCheckPath: /
+    healthCheckPath: /health
     envVars:
       - key: RTSP_USER
         sync: false
