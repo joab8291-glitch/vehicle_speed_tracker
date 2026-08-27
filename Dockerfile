@@ -1,6 +1,9 @@
 FROM python:3.11-slim
 
-# System libraries needed by OpenCV + curl for downloads
+# ============================================================
+# System dependencies
+# ============================================================
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     curl \
@@ -11,28 +14,80 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
+
+# ============================================================
+# Application directory
+# ============================================================
+
 WORKDIR /app
 
-# Install Python dependencies
+
+# ============================================================
+# Python dependencies
+# ============================================================
+
 COPY requirements.txt .
+
 COPY dashboard/requirements.txt dashboard/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt -r dashboard/requirements.txt
 
+RUN pip install --no-cache-dir \
+    -r requirements.txt \
+    -r dashboard/requirements.txt
+
+
+# ============================================================
 # Application files
-COPY video.mp4 /app/video.mp4
-COPY config.yaml /app/config.yaml
-COPY vehicle_speed_tracker.py .
-COPY calibrate_points.py .
-COPY bytetrack_custom.yaml .
-COPY dashboard/ dashboard/
-COPY start.sh .
-RUN chmod +x start.sh
+# ============================================================
 
-# Bake YOLO weights
+COPY video.mp4 /app/video.mp4
+
+COPY config.yaml /app/config.yaml
+
+COPY vehicle_speed_tracker.py /app/vehicle_speed_tracker.py
+
+COPY calibrate_points.py /app/calibrate_points.py
+
+COPY bytetrack_custom.yaml /app/bytetrack_custom.yaml
+
+COPY dashboard/ /app/dashboard/
+
+COPY start.sh /app/start.sh
+
+
+# ============================================================
+# Permissions
+# ============================================================
+
+RUN chmod +x /app/start.sh
+
+
+# ============================================================
+# YOLO model
+# ============================================================
+
 ADD https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt /app/yolov8n.pt
 
-# Silence the Ultralytics config directory warning
+
+# ============================================================
+# Ultralytics configuration
+# ============================================================
+
 ENV YOLO_CONFIG_DIR=/tmp/Ultralytics
 
-# Start both tracker + dashboard
-CMD ["./start.sh"]
+
+# ============================================================
+# Persistent directories
+# ============================================================
+
+RUN mkdir -p \
+    /app/data \
+    /app/data/snapshots \
+    /app/data/recordings \
+    /tmp/Ultralytics
+
+
+# ============================================================
+# Start application
+# ============================================================
+
+CMD ["/app/start.sh"]
