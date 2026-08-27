@@ -1,49 +1,93 @@
-# render.yaml — Render Blueprint
-#
-# One service runs both pieces described earlier: the tracker itself (no
-# public URL, just watches the RTSP stream and writes CSVs/snapshots to
-# disk) and a small dashboard that serves those results over HTTP. They're
-# combined into a single Web Service here — via start.sh, which launches the
-# tracker in the background and the dashboard in the foreground — so both
-# processes share the one persistent disk without needing Render's paid
-# Shared Disks feature. If you'd rather keep them fully separate (e.g. the
-# tracker as its own Background Worker), split this into two services and
-# add a Shared Disk between them.
-#
-# Setup:
-#   1. Push this repo (including Dockerfile) to GitHub.
-#   2. On Render: New -> Blueprint -> connect the repo -> Render reads this file.
-#   3. Render will prompt you to fill in the secret env vars below (RTSP_USER,
-#      RTSP_PASS, RTSP_HOST, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) — nothing
-#      sensitive ever needs to be committed to the repo.
-#   4. Attach a persistent disk (below) so recordings/snapshots/logs survive
-#      restarts and deploys instead of living only in the ephemeral container.
-#   5. Once deployed, open the service's Render URL to view the dashboard.
+# ============================================================
+# Render Blueprint - Webazi Vehicle Speed Tracker
+# ============================================================
 
 services:
   - type: web
     name: vehicle-speed-tracker
+
     runtime: docker
+
     dockerfilePath: ./Dockerfile
-    plan: standard          # CPU inference needs more than the free/starter tier; bump to pro if it can't keep up in real time
+
+    plan: standard
+
     autoDeploy: true
+
+    # IMPORTANT:
+    # Do not use "/" because the dashboard requires authentication.
     healthCheckPath: /health
+
     envVars:
+
+      # --------------------------------------------------------
+      # CCTV
+      # --------------------------------------------------------
+
       - key: RTSP_USER
         sync: false
+
       - key: RTSP_PASS
         sync: false
+
       - key: RTSP_HOST
         sync: false
+
+
+      # --------------------------------------------------------
+      # Dashboard authentication
+      # --------------------------------------------------------
+
       - key: DASHBOARD_USER
         sync: false
+
       - key: DASHBOARD_PASS
         sync: false
+
+
+      # --------------------------------------------------------
+      # Telegram
+      # --------------------------------------------------------
+
       - key: TELEGRAM_BOT_TOKEN
         sync: false
+
       - key: TELEGRAM_CHAT_ID
         sync: false
+
+
+      # --------------------------------------------------------
+      # Persistent data paths
+      # --------------------------------------------------------
+
+      - key: SPEED_LOG_PATH
+        value: /app/data/speed_log.csv
+
+      - key: COUNTS_LOG_PATH
+        value: /app/data/vehicle_counts.csv
+
+      - key: ALERTS_LOG_PATH
+        value: /app/data/alerts.csv
+
+      - key: SNAPSHOT_DIR
+        value: /app/data/snapshots
+
+
+      # --------------------------------------------------------
+      # Ultralytics
+      # --------------------------------------------------------
+
+      - key: YOLO_CONFIG_DIR
+        value: /tmp/Ultralytics
+
+
+    # ----------------------------------------------------------
+    # Persistent disk
+    # ----------------------------------------------------------
+
     disk:
       name: tracker-data
+
       mountPath: /app/data
+
       sizeGB: 10
