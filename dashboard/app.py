@@ -125,7 +125,22 @@ def build_stats():
     }
 
 
+@app.route("/health")
+def health():
+    """
+    Public health-check endpoint for Render.
+
+    This endpoint intentionally does not require authentication
+    because Render needs to access it to determine whether the
+    service is healthy.
+    """
+    return "OK", 200
+
+
 @app.route("/")
+@require_auth
+def index():
+    return render_template("index.html")@app.route("/")
 @require_auth
 def index():
     return render_template("index.html")
@@ -144,10 +159,6 @@ def snapshots(filename):
         abort(404)
     return send_from_directory(SNAPSHOT_DIR, filename)
 
-
-@app.route("/health")
-def health():
-    return "OK", 200
 
 
 if __name__ == "__main__":
