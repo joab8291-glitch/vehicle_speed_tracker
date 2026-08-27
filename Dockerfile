@@ -1,12 +1,13 @@
 FROM python:3.11-slim
 
 # ============================================================
-# System dependencies
+# SYSTEM DEPENDENCIES
 # ============================================================
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     curl \
+    ffmpeg \
     libgl1 \
     libglib2.0-0 \
     libsm6 \
@@ -16,14 +17,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 
 # ============================================================
-# Application directory
+# APPLICATION
 # ============================================================
 
 WORKDIR /app
 
 
 # ============================================================
-# Python dependencies
+# PYTHON DEPENDENCIES
 # ============================================================
 
 COPY requirements.txt .
@@ -36,47 +37,53 @@ RUN pip install --no-cache-dir \
 
 
 # ============================================================
-# Application files
+# APPLICATION FILES
 # ============================================================
 
 COPY video.mp4 /app/video.mp4
 
 COPY config.yaml /app/config.yaml
 
-COPY vehicle_speed_tracker.py /app/vehicle_speed_tracker.py
+COPY vehicle_speed_tracker.py \
+    /app/vehicle_speed_tracker.py
 
-COPY calibrate_points.py /app/calibrate_points.py
+COPY calibrate_points.py \
+    /app/calibrate_points.py
 
-COPY bytetrack_custom.yaml /app/bytetrack_custom.yaml
+COPY bytetrack_custom.yaml \
+    /app/bytetrack_custom.yaml
 
-COPY dashboard/ /app/dashboard/
+COPY dashboard/ \
+    /app/dashboard/
 
-COPY start.sh /app/start.sh
+COPY start.sh \
+    /app/start.sh
 
 
 # ============================================================
-# Permissions
+# PERMISSIONS
 # ============================================================
 
 RUN chmod +x /app/start.sh
 
 
 # ============================================================
-# YOLO model
+# YOLO MODEL
 # ============================================================
 
-ADD https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt /app/yolov8n.pt
+ADD https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt \
+    /app/yolov8n.pt
 
 
 # ============================================================
-# Ultralytics configuration
+# ULTRALYTICS
 # ============================================================
 
 ENV YOLO_CONFIG_DIR=/tmp/Ultralytics
 
 
 # ============================================================
-# Persistent directories
+# PERSISTENT DIRECTORIES
 # ============================================================
 
 RUN mkdir -p \
@@ -87,7 +94,7 @@ RUN mkdir -p \
 
 
 # ============================================================
-# Start application
+# START
 # ============================================================
 
 CMD ["/app/start.sh"]
