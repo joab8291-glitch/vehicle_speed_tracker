@@ -25,6 +25,10 @@ import os
 import re
 import sys
 import time
+
+# Configure Ultralytics before importing YOLO
+os.environ["YOLO_CONFIG_DIR"] = "/tmp/Ultralytics"
+
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
 
