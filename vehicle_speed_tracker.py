@@ -93,7 +93,10 @@ DEFAULT_CONFIG = {
         "min_plausible_kph": 2,
     },
     "speed_thresholds": {"green_kph": 60, "yellow_kph": 100},
-    "counting": {"enabled": True, "csv_path": "vehicle_counts.csv"},
+    "counting": {
+    "enabled": True,
+    "csv_path": os.getenv("COUNTS_LOG_PATH", "/app/data/vehicle_counts.csv")
+},
     "alerts": {
         "enabled": False,
         "speed_kph_threshold": 100,
