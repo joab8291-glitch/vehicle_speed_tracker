@@ -1,43 +1,18 @@
-# ============================================================
-# Webazi Vehicle Speed Tracker - Render Configuration
-# ============================================================
-
-# ------------------------------------------------------------
-# VIDEO / CAMERA SOURCE
-# ------------------------------------------------------------
-
-# Current testing source
 source: /app/video.mp4
 
-# For live CCTV, replace the source above with your RTSP URL.
-# Credentials are supplied through Render environment variables.
-#
-# source: "rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST}:554/Streaming/Channels/101"
+output: /app/data/output_speed.mp4
 
-
-# ------------------------------------------------------------
-# OUTPUT
-# ------------------------------------------------------------
-
-output: null
-
-# Persistent Render disk
 log: /app/data/speed_log.csv
 
 model: /app/yolov8n.pt
 
 device: cpu
 
-imgsz: 416
+imgsz: 640
 
-process_every: 2
+process_every: 1
 
 display: false
-
-
-# ------------------------------------------------------------
-# CAMERA / ROAD CALIBRATION
-# ------------------------------------------------------------
 
 camera:
   lane_width_m: 3.75
@@ -64,15 +39,9 @@ camera:
 
   undistort:
     enabled: false
-    camera_matrix: null
-    dist_coeffs: null
-
-
-# ------------------------------------------------------------
-# VEHICLE TRACKING
-# ------------------------------------------------------------
 
 tracking:
+
   tracker_yaml: /app/bytetrack_custom.yaml
 
   min_track_frames: 8
@@ -83,41 +52,25 @@ tracking:
 
   min_plausible_kph: 2
 
-
-# ------------------------------------------------------------
-# SPEED THRESHOLDS
-# ------------------------------------------------------------
-
 speed_thresholds:
+
   green_kph: 60
 
   yellow_kph: 100
 
-
-# ------------------------------------------------------------
-# VEHICLE COUNTING
-# ------------------------------------------------------------
-
 counting:
+
   enabled: true
 
   csv_path: /app/data/vehicle_counts.csv
 
-
-# ------------------------------------------------------------
-# SPEED ALERTS
-# ------------------------------------------------------------
-
 alerts:
+
   enabled: false
 
   speed_kph_threshold: 100
 
   webhook_url: null
-
-  telegram_bot_token: null
-
-  telegram_chat_id: null
 
   snapshot_dir: /app/data/snapshots
 
@@ -125,13 +78,9 @@ alerts:
 
   log_path: /app/data/alerts.csv
 
-
-# ------------------------------------------------------------
-# VIDEO RECORDING
-# ------------------------------------------------------------
-
 recording:
-  enabled: false
+
+  enabled: true
 
   output_dir: /app/data/recordings
 
