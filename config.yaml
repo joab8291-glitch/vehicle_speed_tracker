@@ -7,7 +7,7 @@
 # ------------------------------------------------------------
 
 # Current testing source
-source: video.mp4
+source: /app/video.mp4
 
 # For live CCTV, replace the source above with your RTSP URL.
 # Credentials are supplied through Render environment variables.
