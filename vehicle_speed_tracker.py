@@ -1,32 +1,31 @@
 """
-vehicle_speed_tracker.py
+Webazi Vehicle Speed Tracker
 
-Config-driven vehicle speed tracker for:
+Supports:
+- Recorded video: video.mp4
+- RTSP / RTMP / HTTP live sources
+- Webcam
+- YOLO vehicle detection + ByteTrack
+- Speed estimation
+- Vehicle counting
+- Speeding alerts
+- Snapshots
+- CSV logs
+- Processed output video
 
-    - Recorded video
-    - Live RTSP CCTV
-    - RTMP/HTTP streams
-    - Webcam
+For Render:
+    Input:
+        /app/video.mp4
 
-Recorded video:
-    python vehicle_speed_tracker.py --source video.mp4
+    Processed output:
+        /app/data/output_speed.mp4
 
-Config:
-    python vehicle_speed_tracker.py --config config.yaml
+    Logs:
+        /app/data/speed_log.csv
+        /app/data/vehicle_counts.csv
+        /app/data/alerts.csv
 
-Environment variables can be referenced in config.yaml using:
-
-    ${RTSP_USER}
-    ${RTSP_PASS}
-    ${RTSP_HOST}
-
-Example:
-
-    source: "rtsp://${RTSP_USER}:${RTSP_PASS}@${RTSP_HOST}:554/stream"
-
-Important:
-    YOLO_CONFIG_DIR is set BEFORE importing ultralytics so Render does not
-    produce the unwritable Ultralytics configuration warning.
+Ultralytics configuration is set BEFORE importing YOLO.
 """
 
 import argparse
@@ -37,12 +36,11 @@ import os
 import re
 import sys
 import time
-
 from collections import defaultdict, deque
 from datetime import datetime
 
 # ============================================================
-# Ultralytics configuration
+# ULTRALYTICS CONFIGURATION
 # ============================================================
 
 YOLO_CONFIG_DIR = os.getenv(
@@ -53,9 +51,8 @@ YOLO_CONFIG_DIR = os.getenv(
 os.environ["YOLO_CONFIG_DIR"] = YOLO_CONFIG_DIR
 os.makedirs(YOLO_CONFIG_DIR, exist_ok=True)
 
-
 # ============================================================
-# Imports
+# IMPORTS
 # ============================================================
 
 import cv2
@@ -63,13 +60,11 @@ import numpy as np
 
 from ultralytics import YOLO
 
-
 try:
     import yaml
     HAVE_YAML = True
 except ImportError:
     HAVE_YAML = False
-
 
 try:
     import requests
@@ -79,7 +74,7 @@ except ImportError:
 
 
 # ============================================================
-# Constants
+# CONSTANTS
 # ============================================================
 
 VEHICLE_CLASSES = {
@@ -90,9 +85,7 @@ VEHICLE_CLASSES = {
 }
 
 FALLBACK_FPS = 25.0
-
 RECONNECT_DELAY_S = 3.0
-
 LOG_FLUSH_EVERY_S = 30.0
 
 ENV_VAR_PATTERN = re.compile(
@@ -101,19 +94,15 @@ ENV_VAR_PATTERN = re.compile(
 
 
 # ============================================================
-# Default configuration
+# DEFAULT CONFIG
 # ============================================================
 
 DEFAULT_CONFIG = {
-
     "source": "video.mp4",
 
-    # None means:
-    #
-    # recorded video -> output_speed.mp4
-    # live source    -> timestamped output
-    #
-    "output": None,
+    # IMPORTANT:
+    # Processed video is stored on Render persistent disk.
+    "output": "/app/data/output_speed.mp4",
 
     "log": os.getenv(
         "SPEED_LOG_PATH",
@@ -131,72 +120,56 @@ DEFAULT_CONFIG = {
     "display": False,
 
     "camera": {
-
         "lane_width_m": 3.75,
-
         "num_lanes_left": 5,
-
         "num_lanes_right": 3,
-
         "bev_scale": 18,
-
         "visible_length_m": 70,
 
         "src_road_l": [
             [155, 415],
             [600, 395],
             [845, 1079],
-            [0, 1079],
+            [0, 1079]
         ],
 
         "src_road_r": [
             [845, 395],
             [1140, 395],
             [1220, 1079],
-            [900, 1079],
+            [900, 1079]
         ],
 
         "undistort": {
             "enabled": False,
             "camera_matrix": None,
-            "dist_coeffs": None,
-        },
+            "dist_coeffs": None
+        }
     },
 
     "tracking": {
-
         "tracker_yaml": "bytetrack_custom.yaml",
-
         "min_track_frames": 8,
-
         "history_len": 25,
-
         "max_plausible_kph": 200,
-
-        "min_plausible_kph": 2,
+        "min_plausible_kph": 2
     },
 
     "speed_thresholds": {
-
         "green_kph": 60,
-
-        "yellow_kph": 100,
+        "yellow_kph": 100
     },
 
     "counting": {
-
         "enabled": True,
-
         "csv_path": os.getenv(
             "COUNTS_LOG_PATH",
             "/app/data/vehicle_counts.csv"
-        ),
+        )
     },
 
     "alerts": {
-
         "enabled": False,
-
         "speed_kph_threshold": 100,
 
         "webhook_url": None,
@@ -219,69 +192,51 @@ DEFAULT_CONFIG = {
         "log_path": os.getenv(
             "ALERTS_LOG_PATH",
             "/app/data/alerts.csv"
-        ),
+        )
     },
 
     "recording": {
-
         "enabled": True,
-
-        "output_dir": "recordings",
-
+        "output_dir": "/app/data/recordings",
         "segment_minutes": 60,
-
-        "retention_days": 7,
-    },
+        "retention_days": 7
+    }
 }
 
 
 # ============================================================
-# Utility functions
+# ENVIRONMENT VARIABLES
 # ============================================================
 
-def ensure_parent_dir(path):
-    """
-    Make sure the parent directory of a file exists.
-    """
-
-    directory = os.path.dirname(os.path.abspath(path))
-
-    if directory:
-        os.makedirs(directory, exist_ok=True)
-
-
 def _resolve_env_vars(value):
-    """
-    Replace ${VAR_NAME} with environment variables.
-    """
 
     if isinstance(value, str):
 
-        def _sub(match):
+        def substitute(match):
 
             var_name = match.group(1)
 
             if var_name not in os.environ:
-
                 sys.exit(
                     f"Config references ${{{var_name}}} "
-                    f"but environment variable "
-                    f"{var_name} is not set."
+                    f"but environment variable {var_name} "
+                    f"is not set."
                 )
 
             return os.environ[var_name]
 
-        return ENV_VAR_PATTERN.sub(_sub, value)
+        return ENV_VAR_PATTERN.sub(
+            substitute,
+            value
+        )
 
     if isinstance(value, dict):
-
         return {
             k: _resolve_env_vars(v)
             for k, v in value.items()
         }
 
     if isinstance(value, list):
-
         return [
             _resolve_env_vars(v)
             for v in value
@@ -291,9 +246,6 @@ def _resolve_env_vars(value):
 
 
 def deep_merge(base, override):
-    """
-    Recursively merge dictionaries.
-    """
 
     result = dict(base)
 
@@ -303,14 +255,11 @@ def deep_merge(base, override):
             isinstance(value, dict)
             and isinstance(result.get(key), dict)
         ):
-
             result[key] = deep_merge(
                 result[key],
                 value
             )
-
         else:
-
             result[key] = value
 
     return result
@@ -323,14 +272,11 @@ def load_config(path):
     if path:
 
         if not HAVE_YAML:
-
             sys.exit(
-                "PyYAML is required for --config. "
-                "Install it with: pip install pyyaml"
+                "PyYAML is required for --config."
             )
 
-        with open(path, "r", encoding="utf-8") as f:
-
+        with open(path, "r") as f:
             user_cfg = yaml.safe_load(f) or {}
 
         cfg = deep_merge(
@@ -344,7 +290,7 @@ def load_config(path):
 
 
 # ============================================================
-# Geometry
+# GEOMETRY
 # ============================================================
 
 def build_bev_transform(
@@ -354,19 +300,14 @@ def build_bev_transform(
     scale
 ):
 
-    bev_w = int(
-        road_width_m * scale
-    )
-
-    bev_h = int(
-        visible_len_m * scale
-    )
+    bev_w = int(road_width_m * scale)
+    bev_h = int(visible_len_m * scale)
 
     dst = np.float32([
         [0, 0],
         [bev_w, 0],
         [bev_w, bev_h],
-        [0, bev_h],
+        [0, bev_h]
     ])
 
     M = cv2.getPerspectiveTransform(
@@ -379,21 +320,13 @@ def build_bev_transform(
         src_pts
     )
 
-    return (
-        M,
-        Minv,
-        bev_w,
-        bev_h
-    )
+    return M, Minv, bev_w, bev_h
 
 
 def to_bev(M, pt):
 
     p = np.float32([
-        [[
-            pt[0],
-            pt[1]
-        ]]
+        [[pt[0], pt[1]]]
     ])
 
     transformed = cv2.perspectiveTransform(
@@ -407,6 +340,10 @@ def to_bev(M, pt):
     )
 
 
+# ============================================================
+# SPEED
+# ============================================================
+
 def fit_speed_kph(
     history,
     dt,
@@ -416,38 +353,29 @@ def fit_speed_kph(
     if len(history) < 3:
         return None
 
-    pts = list(history)
+    points = list(history)
 
-    t0 = pts[0][2]
+    t0 = points[0][2]
 
     times = np.array(
         [
             (p[2] - t0) * dt
-            for p in pts
+            for p in points
         ],
         dtype=np.float64
     )
 
     xs = np.array(
-        [
-            p[0]
-            for p in pts
-        ],
+        [p[0] for p in points],
         dtype=np.float64
     )
 
     ys = np.array(
-        [
-            p[1]
-            for p in pts
-        ],
+        [p[1] for p in points],
         dtype=np.float64
     )
 
-    if (
-        times[-1] - times[0]
-        <= 0
-    ):
+    if times[-1] - times[0] <= 0:
         return None
 
     vx = np.polyfit(
@@ -467,9 +395,7 @@ def fit_speed_kph(
         vy
     )
 
-    speed_m_s = (
-        speed_px_s / scale
-    )
+    speed_m_s = speed_px_s / scale
 
     return speed_m_s * 3.6
 
@@ -481,26 +407,12 @@ def speed_color(
 ):
 
     if kph < green:
-
-        return (
-            0,
-            220,
-            0
-        )
+        return (0, 220, 0)
 
     if kph < yellow:
+        return (0, 200, 255)
 
-        return (
-            0,
-            200,
-            255
-        )
-
-    return (
-        0,
-        50,
-        255
-    )
+    return (0, 50, 255)
 
 
 def draw_label(
@@ -517,10 +429,7 @@ def draw_label(
         int(pos[1])
     )
 
-    (
-        tw,
-        th
-    ), baseline = cv2.getTextSize(
+    (tw, th), baseline = cv2.getTextSize(
         text,
         cv2.FONT_HERSHEY_DUPLEX,
         font_scale,
@@ -539,11 +448,7 @@ def draw_label(
             x + tw + pad,
             y + baseline + pad
         ),
-        (
-            20,
-            20,
-            20
-        ),
+        (20, 20, 20),
         -1
     )
 
@@ -560,7 +465,7 @@ def draw_label(
 
 
 # ============================================================
-# Source handling
+# SOURCE
 # ============================================================
 
 def parse_source(raw_source):
@@ -568,26 +473,24 @@ def parse_source(raw_source):
     raw_source = str(raw_source)
 
     if raw_source.isdigit():
-
         return int(raw_source)
 
     return raw_source
 
 
-def is_live_source(raw_source):
+def is_live_source(source):
 
-    if isinstance(raw_source, int):
-
+    if isinstance(source, int):
         return True
 
-    lowered = raw_source.lower()
+    lowered = str(source).lower()
 
     return lowered.startswith(
         (
             "rtsp://",
             "rtmp://",
             "http://",
-            "https://",
+            "https://"
         )
     )
 
@@ -597,12 +500,10 @@ def open_capture(source):
     cap = cv2.VideoCapture(source)
 
     try:
-
         cap.set(
             cv2.CAP_PROP_BUFFERSIZE,
             1
         )
-
     except Exception:
         pass
 
@@ -610,7 +511,7 @@ def open_capture(source):
 
 
 # ============================================================
-# Video writer
+# ROTATING VIDEO WRITER
 # ============================================================
 
 class RotatingVideoWriter:
@@ -633,7 +534,7 @@ class RotatingVideoWriter:
 
         self.output_dir = rec_cfg.get(
             "output_dir",
-            "recordings"
+            "/app/data/recordings"
         )
 
         self.segment_seconds = max(
@@ -652,9 +553,7 @@ class RotatingVideoWriter:
         )
 
         self.fps = fps
-
         self.width = width
-
         self.height = height
 
         self.fallback_path = fallback_path
@@ -664,9 +563,7 @@ class RotatingVideoWriter:
         )
 
         self.writer = None
-
-        self.segment_start = 0.0
-
+        self.segment_start = 0
         self.current_path = None
 
         if self.enabled:
@@ -678,22 +575,20 @@ class RotatingVideoWriter:
 
             self._open_new_segment()
 
-            self._purge_old_segments()
-
         else:
 
-            ensure_parent_dir(
-                fallback_path
+            os.makedirs(
+                os.path.dirname(
+                    fallback_path
+                ) or ".",
+                exist_ok=True
             )
 
             self.writer = cv2.VideoWriter(
                 fallback_path,
                 self.fourcc,
                 fps,
-                (
-                    width,
-                    height
-                )
+                (width, height)
             )
 
             self.current_path = fallback_path
@@ -701,7 +596,6 @@ class RotatingVideoWriter:
     def _open_new_segment(self):
 
         if self.writer is not None:
-
             self.writer.release()
 
         timestamp = datetime.now().strftime(
@@ -727,65 +621,29 @@ class RotatingVideoWriter:
 
         print(
             f"[recording] new segment -> "
-            f"{self.current_path}"
+            f"{self.current_path}",
+            flush=True
         )
-
-    def _purge_old_segments(self):
-
-        if not self.retention_days:
-            return
-
-        cutoff = (
-            time.time()
-            - self.retention_days * 86400
-        )
-
-        for path in glob.glob(
-            os.path.join(
-                self.output_dir,
-                "segment_*.mp4"
-            )
-        ):
-
-            try:
-
-                if os.path.getmtime(path) < cutoff:
-
-                    os.remove(path)
-
-                    print(
-                        f"[recording] purged -> "
-                        f"{path}"
-                    )
-
-            except OSError:
-                pass
 
     def write(self, frame):
 
-        if self.enabled:
-
-            if (
-                time.time()
-                - self.segment_start
-                >= self.segment_seconds
-            ):
-
-                self._open_new_segment()
-
-                self._purge_old_segments()
+        if (
+            self.enabled
+            and time.time() - self.segment_start
+            >= self.segment_seconds
+        ):
+            self._open_new_segment()
 
         self.writer.write(frame)
 
     def release(self):
 
         if self.writer is not None:
-
             self.writer.release()
 
 
 # ============================================================
-# Alerts
+# ALERTS
 # ============================================================
 
 def send_alert(
@@ -793,21 +651,19 @@ def send_alert(
     event
 ):
 
-    webhook_url = cfg_alerts.get(
+    webhook = cfg_alerts.get(
         "webhook_url"
     )
 
-    if webhook_url:
+    if webhook and HAVE_REQUESTS:
 
         try:
 
-            if HAVE_REQUESTS:
-
-                requests.post(
-                    webhook_url,
-                    json=event,
-                    timeout=5
-                )
+            requests.post(
+                webhook,
+                json=event,
+                timeout=5
+            )
 
         except Exception as e:
 
@@ -823,39 +679,36 @@ def send_alert(
         "telegram_chat_id"
     )
 
-    if token and chat_id:
+    if token and chat_id and HAVE_REQUESTS:
 
         try:
 
-            if HAVE_REQUESTS:
+            text = (
+                f"Speeding: "
+                f"{event['class']} "
+                f"#{event['track_id']} "
+                f"at {event['kph']:.0f} km/h "
+                f"({event['timestamp']})"
+            )
 
-                text = (
-                    f"Speeding: "
-                    f"{event['class']} "
-                    f"#{event['track_id']} "
-                    f"at "
-                    f"{event['kph']:.0f} km/h "
-                    f"({event['timestamp']})"
-                )
+            url = (
+                f"https://api.telegram.org/"
+                f"bot{token}/sendMessage"
+            )
 
-                url = (
-                    "https://api.telegram.org/"
-                    f"bot{token}/sendMessage"
-                )
-
-                requests.post(
-                    url,
-                    data={
-                        "chat_id": chat_id,
-                        "text": text,
-                    },
-                    timeout=5
-                )
+            requests.post(
+                url,
+                data={
+                    "chat_id": chat_id,
+                    "text": text
+                },
+                timeout=5
+            )
 
         except Exception as e:
 
             print(
-                f"[alert] telegram failed: {e}"
+                f"[alert] Telegram failed: {e}"
             )
 
 
@@ -875,10 +728,14 @@ def save_snapshot(
         exist_ok=True
     )
 
-    ts = (
-        event["timestamp"]
-        .replace(":", "-")
-        .replace(" ", "_")
+    ts = event[
+        "timestamp"
+    ].replace(
+        ":",
+        "-"
+    ).replace(
+        " ",
+        "_"
     )
 
     base = (
@@ -886,8 +743,6 @@ def save_snapshot(
         f"id{event['track_id']}_"
         f"{event['kph']:.0f}kph"
     )
-
-    crop_name = None
 
     if cfg_alerts.get(
         "save_full_frame",
@@ -907,30 +762,17 @@ def save_snapshot(
         for v in box
     ]
 
-    x1 = max(
-        0,
-        x1
-    )
-
-    y1 = max(
-        0,
-        y1
-    )
-
-    x2 = min(
-        frame.shape[1],
-        x2
-    )
-
-    y2 = min(
-        frame.shape[0],
-        y2
-    )
+    x1 = max(0, x1)
+    y1 = max(0, y1)
+    x2 = min(frame.shape[1], x2)
+    y2 = min(frame.shape[0], y2)
 
     crop = frame[
         y1:y2,
         x1:x2
     ]
+
+    crop_name = None
 
     if crop.size > 0:
 
@@ -955,121 +797,94 @@ def log_alert(
     crop_name
 ):
 
-    ensure_parent_dir(
-        alerts_csv_path
+    os.makedirs(
+        os.path.dirname(
+            alerts_csv_path
+        ) or ".",
+        exist_ok=True
     )
 
-    file_exists = os.path.isfile(
+    exists = os.path.isfile(
         alerts_csv_path
     )
 
     with open(
         alerts_csv_path,
         "a",
-        newline="",
-        encoding="utf-8"
+        newline=""
     ) as f:
 
         writer = csv.writer(f)
 
-        if not file_exists:
+        if not exists:
 
             writer.writerow([
                 "timestamp",
                 "track_id",
                 "class",
                 "kph",
-                "snapshot",
+                "snapshot"
             ])
 
         writer.writerow([
             event["timestamp"],
             event["track_id"],
             event["class"],
-            round(
-                event["kph"],
-                1
-            ),
-            crop_name or "",
+            round(event["kph"], 1),
+            crop_name or ""
         ])
 
 
 # ============================================================
-# CLI
+# ARGUMENTS
 # ============================================================
 
 def parse_args():
 
     parser = argparse.ArgumentParser(
-        description=(
-            "Vehicle speed tracker "
-            "(file, RTSP CCTV, "
-            "or webcam)."
-        )
+        description="Webazi Vehicle Speed Tracker"
     )
 
     parser.add_argument(
         "--config",
-        default=None,
-        help="Path to YAML config file."
+        default=None
     )
 
     parser.add_argument(
         "--source",
-        default=None,
-        help=(
-            "File path, RTSP/HTTP URL, "
-            "or webcam index."
-        )
+        default=None
     )
 
     parser.add_argument(
         "--output",
-        default=None,
-        help="Output video path."
+        default=None
     )
 
     parser.add_argument(
         "--log",
-        default=None,
-        help="Speed CSV path."
+        default=None
     )
 
     parser.add_argument(
         "--model",
-        default=None,
-        help="YOLO model path."
+        default=None
     )
 
     parser.add_argument(
         "--device",
-        default=None,
-        help=(
-            "cpu / cuda:0 / mps"
-        )
+        default=None
     )
 
     parser.add_argument(
         "--display",
-        action="store_true",
-        help="Show live preview."
-    )
-
-    parser.add_argument(
-        "--max-reconnects",
-        type=int,
-        default=0,
-        help=(
-            "Live source reconnect attempts. "
-            "0 = retry forever."
-        )
+        action="store_true"
     )
 
     return parser.parse_args()
 
 
 # ============================================================
-# Main
+# MAIN
 # ============================================================
 
 def main():
@@ -1080,53 +895,33 @@ def main():
         args.config
     )
 
-    # --------------------------------------------------------
-    # CLI overrides
-    # --------------------------------------------------------
-
     if args.source is not None:
-
         cfg["source"] = args.source
 
     if args.output is not None:
-
         cfg["output"] = args.output
 
     if args.log is not None:
-
         cfg["log"] = args.log
 
     if args.model is not None:
-
         cfg["model"] = args.model
 
     if args.device is not None:
-
         cfg["device"] = args.device
 
     if args.display:
-
         cfg["display"] = True
 
     # --------------------------------------------------------
-    # Configuration sections
+    # CONFIG
     # --------------------------------------------------------
 
     cam = cfg["camera"]
-
     trk = cfg["tracking"]
-
     thr = cfg["speed_thresholds"]
-
     cnt_cfg = cfg["counting"]
-
     alert_cfg = cfg["alerts"]
-
-    rec_cfg = cfg["recording"]
-
-    # --------------------------------------------------------
-    # Source
-    # --------------------------------------------------------
 
     source = parse_source(
         cfg["source"]
@@ -1136,69 +931,53 @@ def main():
         source
     )
 
-    # ========================================================
-    # IMPORTANT OUTPUT PATH LOGIC
-    # ========================================================
-    #
-    # For recorded video.mp4:
-    #
-    #     output_speed.mp4
-    #
-    # For live CCTV:
-    #
-    #     output_speed_YYYYMMDD_HHMMSS.mp4
-    #
-    # If config.yaml explicitly supplies "output:",
-    # that value wins.
-    # ========================================================
+    # --------------------------------------------------------
+    # OUTPUT
+    # --------------------------------------------------------
 
     timestamp_tag = datetime.now().strftime(
         "%Y%m%d_%H%M%S"
     )
 
+    # IMPORTANT:
+    # This is the fallback output requested.
     fallback_video_out = cfg["output"] or (
-        f"output_speed_{timestamp_tag}.mp4"
+        f"/app/data/output_speed_{timestamp_tag}.mp4"
         if live
-        else "output_speed.mp4"
+        else "/app/data/output_speed.mp4"
     )
 
-    print(
-        "============================================================"
-    )
+    # Ensure output directory exists.
 
-    print(
-        "Webazi Vehicle Speed Tracker"
-    )
-
-    print(
-        "============================================================"
-    )
-
-    print(
-        f"Source: {cfg['source']}"
-    )
-
-    print(
-        f"Mode: "
-        f"{'LIVE' if live else 'RECORDED VIDEO'}"
-    )
-
-    print(
-        f"Output: {fallback_video_out}"
-    )
-
-    print(
-        f"Speed log: {cfg['log']}"
-    )
-
-    print(
-        f"YOLO_CONFIG_DIR: "
-        f"{YOLO_CONFIG_DIR}"
+    os.makedirs(
+        os.path.dirname(
+            fallback_video_out
+        ) or ".",
+        exist_ok=True
     )
 
     # --------------------------------------------------------
-    # Open video
+    # OPEN VIDEO
     # --------------------------------------------------------
+
+    print("=" * 60, flush=True)
+    print("WEBazi VEHICLE SPEED TRACKER", flush=True)
+    print("=" * 60, flush=True)
+
+    print(
+        f"Input source: {cfg['source']}",
+        flush=True
+    )
+
+    print(
+        f"Output video: {fallback_video_out}",
+        flush=True
+    )
+
+    print(
+        f"YOLO_CONFIG_DIR: {YOLO_CONFIG_DIR}",
+        flush=True
+    )
 
     cap = open_capture(
         source
@@ -1207,20 +986,14 @@ def main():
     if not cap.isOpened():
 
         raise FileNotFoundError(
-            f"Cannot open source "
-            f"'{cfg['source']}'."
+            f"Cannot open source: "
+            f"{cfg['source']}"
         )
 
     fps = (
-        cap.get(
-            cv2.CAP_PROP_FPS
-        )
+        cap.get(cv2.CAP_PROP_FPS)
         or FALLBACK_FPS
     )
-
-    if fps <= 0:
-
-        fps = FALLBACK_FPS
 
     width = int(
         cap.get(
@@ -1246,97 +1019,35 @@ def main():
 
     print(
         f"Video: {width}x{height} "
-        f"@ {fps:.2f} FPS"
+        f"@ {fps:.2f} FPS",
+        flush=True
     )
 
-    if total > 0:
-
+    if total:
         print(
-            f"Frames: {total}"
+            f"Frames: {total}",
+            flush=True
         )
 
         print(
             f"Duration: "
-            f"{total / fps:.1f} seconds"
+            f"{total / fps:.2f} seconds",
+            flush=True
         )
 
     # --------------------------------------------------------
-    # Ensure output directories
+    # OUTPUT WRITER
     # --------------------------------------------------------
 
-    ensure_parent_dir(
-        cfg["log"]
-    )
-
-    ensure_parent_dir(
-        cnt_cfg["csv_path"]
-    )
-
-    ensure_parent_dir(
-        alert_cfg["log_path"]
-    )
-
-    os.makedirs(
-        alert_cfg["snapshot_dir"],
-        exist_ok=True
-    )
-
-    # --------------------------------------------------------
-    # Lens undistortion
-    # --------------------------------------------------------
-
-    undist = (
-        cam.get(
-            "undistort",
-            {}
-        )
-        or {}
-    )
-
-    do_undistort = bool(
-        undist.get("enabled")
-        and undist.get("camera_matrix")
-        and undist.get("dist_coeffs")
-    )
-
-    if do_undistort:
-
-        K = np.array(
-            undist["camera_matrix"],
-            dtype=np.float64
-        )
-
-        D = np.array(
-            undist["dist_coeffs"],
-            dtype=np.float64
-        )
-
-        print(
-            "Lens undistortion: ENABLED"
-        )
-
-    else:
-
-        K = None
-
-        D = None
-
-    # --------------------------------------------------------
-    # Video writer
-    # --------------------------------------------------------
+    # Recorded video gets a single output file.
+    # Live sources use rotating recordings.
 
     effective_rec_cfg = dict(
-        rec_cfg
+        cfg.get(
+            "recording",
+            {}
+        )
     )
-
-    # Recorded video is finite.
-    # Therefore do NOT rotate it into recordings/.
-    #
-    # It uses:
-    #
-    #     output_speed.mp4
-    #
-    # Live CCTV uses rotating segments.
 
     if not live:
 
@@ -1353,7 +1064,7 @@ def main():
     )
 
     # --------------------------------------------------------
-    # Bird's-eye-view geometry
+    # CAMERA CALIBRATION
     # --------------------------------------------------------
 
     road_width_l_m = (
@@ -1374,45 +1085,40 @@ def main():
         cam["src_road_r"]
     )
 
-    bev_scale = float(
-        cam["bev_scale"]
+    bev_scale = cam[
+        "bev_scale"
+    ]
+
+    visible_len_m = cam[
+        "visible_length_m"
+    ]
+
+    ML, MLinv, bev_wL, bev_hL = (
+        build_bev_transform(
+            src_road_l,
+            road_width_l_m,
+            visible_len_m,
+            bev_scale
+        )
     )
 
-    visible_len_m = float(
-        cam["visible_length_m"]
-    )
-
-    (
-        ML,
-        MLinv,
-        bev_wL,
-        bev_hL
-    ) = build_bev_transform(
-        src_road_l,
-        road_width_l_m,
-        visible_len_m,
-        bev_scale
-    )
-
-    (
-        MR,
-        MRinv,
-        bev_wR,
-        bev_hR
-    ) = build_bev_transform(
-        src_road_r,
-        road_width_r_m,
-        visible_len_m,
-        bev_scale
+    MR, MRinv, bev_wR, bev_hR = (
+        build_bev_transform(
+            src_road_r,
+            road_width_r_m,
+            visible_len_m,
+            bev_scale
+        )
     )
 
     # --------------------------------------------------------
-    # Load YOLO
+    # YOLO MODEL
     # --------------------------------------------------------
 
     print(
         f"Loading YOLO model: "
-        f"{cfg['model']}"
+        f"{cfg['model']}",
+        flush=True
     )
 
     model = YOLO(
@@ -1420,56 +1126,37 @@ def main():
     )
 
     print(
-        f"Model loaded: "
-        f"{cfg['model']}"
+        "YOLO model loaded successfully.",
+        flush=True
     )
 
     # --------------------------------------------------------
-    # Tracking settings
+    # TRACKING STATE
     # --------------------------------------------------------
 
-    history_len = int(
-        trk["history_len"]
-    )
+    history_len = trk[
+        "history_len"
+    ]
 
-    min_track_frames = int(
-        trk["min_track_frames"]
-    )
+    min_track_frames = trk[
+        "min_track_frames"
+    ]
 
-    max_plausible = float(
-        trk["max_plausible_kph"]
-    )
+    max_plausible = trk[
+        "max_plausible_kph"
+    ]
 
-    min_plausible = float(
-        trk["min_plausible_kph"]
-    )
+    min_plausible = trk[
+        "min_plausible_kph"
+    ]
 
-    green_kph = float(
-        thr["green_kph"]
-    )
+    green_kph = thr[
+        "green_kph"
+    ]
 
-    yellow_kph = float(
-        thr["yellow_kph"]
-    )
-
-    process_every = max(
-        1,
-        int(
-            cfg.get(
-                "process_every",
-                1
-            )
-        )
-    )
-
-    tracker_yaml = trk.get(
-        "tracker_yaml",
-        "bytetrack_custom.yaml"
-    )
-
-    # --------------------------------------------------------
-    # Tracking state
-    # --------------------------------------------------------
+    yellow_kph = thr[
+        "yellow_kph"
+    ]
 
     bev_history = defaultdict(
         lambda: deque(
@@ -1483,55 +1170,39 @@ def main():
         )
     )
 
-    track_frames = defaultdict(
-        int
-    )
-
+    track_frames = defaultdict(int)
     track_class = {}
-
-    track_max_kph = defaultdict(
-        float
-    )
-
-    track_kph_sum = defaultdict(
-        float
-    )
-
-    track_kph_cnt = defaultdict(
-        int
-    )
+    track_max_kph = defaultdict(float)
+    track_kph_sum = defaultdict(float)
+    track_kph_cnt = defaultdict(int)
 
     counted_ids = set()
-
-    class_counts = defaultdict(
-        int
-    )
-
+    class_counts = defaultdict(int)
     alerted_ids = set()
 
     frame_idx = 0
 
     dt = 1.0 / fps
 
-    reconnect_attempts = 0
-
     last_log_flush = time.time()
 
     # --------------------------------------------------------
-    # CSV writers
+    # LOG FUNCTIONS
     # --------------------------------------------------------
 
     def write_speed_log():
 
-        ensure_parent_dir(
-            cfg["log"]
+        os.makedirs(
+            os.path.dirname(
+                cfg["log"]
+            ) or ".",
+            exist_ok=True
         )
 
         with open(
             cfg["log"],
             "w",
-            newline="",
-            encoding="utf-8"
+            newline=""
         ) as f:
 
             writer = csv.writer(f)
@@ -1541,7 +1212,7 @@ def main():
                 "class",
                 "frames_tracked",
                 "avg_kph",
-                "max_kph",
+                "max_kph"
             ])
 
             for tid in sorted(
@@ -1552,12 +1223,12 @@ def main():
                     track_kph_cnt[tid]
                     == 0
                 ):
-
                     continue
 
                 avg_kph = (
                     track_kph_sum[tid]
-                    / track_kph_cnt[tid]
+                    /
+                    track_kph_cnt[tid]
                 )
 
                 writer.writerow([
@@ -1567,36 +1238,34 @@ def main():
                         "Unknown"
                     ),
                     track_frames[tid],
-                    round(
-                        avg_kph,
-                        1
-                    ),
+                    round(avg_kph, 1),
                     round(
                         track_max_kph[tid],
                         1
-                    ),
+                    )
                 ])
-
-        print(
-            f"Speed log saved -> "
-            f"{cfg['log']}"
-        )
 
     def write_counts_log():
 
-        if not cnt_cfg["enabled"]:
-
+        if not cnt_cfg[
+            "enabled"
+        ]:
             return
 
-        ensure_parent_dir(
-            cnt_cfg["csv_path"]
+        path = cnt_cfg[
+            "csv_path"
+        ]
+
+        os.makedirs(
+            os.path.dirname(path)
+            or ".",
+            exist_ok=True
         )
 
         with open(
-            cnt_cfg["csv_path"],
+            path,
             "w",
-            newline="",
-            encoding="utf-8"
+            newline=""
         ) as f:
 
             writer = csv.writer(f)
@@ -1606,10 +1275,7 @@ def main():
                 "count"
             ])
 
-            for (
-                cls_name,
-                count
-            ) in sorted(
+            for cls_name, count in sorted(
                 class_counts.items()
             ):
 
@@ -1618,78 +1284,27 @@ def main():
                     count
                 ])
 
-        print(
-            f"Vehicle counts saved -> "
-            f"{cnt_cfg['csv_path']}"
-        )
-
     # --------------------------------------------------------
-    # Processing
+    # PROCESS VIDEO
     # --------------------------------------------------------
 
     print(
-        "Starting video processing..."
+        "Starting video processing...",
+        flush=True
     )
 
-    if not live:
+    while True:
 
-        print(
-            "Recorded video mode:"
-        )
+        ret, frame = cap.read()
 
-        print(
-            f"Input: "
-            f"{cfg['source']}"
-        )
+        if not ret:
 
-        print(
-            f"Processed output: "
-            f"{fallback_video_out}"
-        )
-
-    try:
-
-        while True:
-
-            ret, frame = cap.read()
-
-            # ------------------------------------------------
-            # End of recorded video
-            # ------------------------------------------------
-
-            if not ret:
-
-                if not live:
-
-                    print(
-                        "End of recorded video."
-                    )
-
-                    break
-
-                # --------------------------------------------
-                # Live source reconnect
-                # --------------------------------------------
-
-                reconnect_attempts += 1
-
-                if (
-                    args.max_reconnects > 0
-                    and reconnect_attempts
-                    > args.max_reconnects
-                ):
-
-                    print(
-                        "Maximum reconnect attempts "
-                        "reached."
-                    )
-
-                    break
+            if live:
 
                 print(
-                    f"Live source disconnected. "
-                    f"Reconnect attempt "
-                    f"{reconnect_attempts}..."
+                    "Live source disconnected. "
+                    "Reconnecting...",
+                    flush=True
                 )
 
                 cap.release()
@@ -1704,369 +1319,223 @@ def main():
 
                 continue
 
-            reconnect_attempts = 0
+            break
 
-            frame_idx += 1
+        frame_idx += 1
 
-            # ------------------------------------------------
-            # Undistort
-            # ------------------------------------------------
+        original_frame = frame.copy()
 
-            if do_undistort:
+        # ----------------------------------------------------
+        # UNDISTORT
+        # ----------------------------------------------------
 
-                frame = cv2.undistort(
-                    frame,
-                    K,
-                    D
-                )
+        undist = cam.get(
+            "undistort",
+            {}
+        ) or {}
 
-            # ------------------------------------------------
-            # Process only selected frames
-            # ------------------------------------------------
-
-            if (
-                frame_idx
-                % process_every
-                != 0
-            ):
-
-                out.write(
-                    frame
-                )
-
-                continue
-
-            # ------------------------------------------------
-            # YOLO tracking
-            # ------------------------------------------------
-
-            try:
-
-                results = model.track(
-                    frame,
-                    persist=True,
-                    tracker=tracker_yaml,
-                    classes=list(
-                        VEHICLE_CLASSES.keys()
-                    ),
-                    device=cfg["device"],
-                    imgsz=int(
-                        cfg["imgsz"]
-                    ),
-                    verbose=False,
-                )
-
-            except Exception as e:
-
-                print(
-                    f"YOLO processing error: "
-                    f"{e}"
-                )
-
-                out.write(
-                    frame
-                )
-
-                continue
-
-            if not results:
-
-                out.write(
-                    frame
-                )
-
-                continue
-
-            result = results[0]
-
-            boxes = result.boxes
-
-            if boxes is None:
-
-                out.write(
-                    frame
-                )
-
-                continue
-
-            # ------------------------------------------------
-            # Extract detections
-            # ------------------------------------------------
-
-            if (
-                boxes.id is None
-                or len(boxes) == 0
-            ):
-
-                out.write(
-                    frame
-                )
-
-                continue
-
-            ids = (
-                boxes.id
-                .int()
-                .cpu()
-                .tolist()
+        if (
+            undist.get(
+                "enabled"
             )
+            and undist.get(
+                "camera_matrix"
+            )
+            and undist.get(
+                "dist_coeffs"
+            )
+        ):
+
+            K = np.array(
+                undist[
+                    "camera_matrix"
+                ],
+                dtype=np.float64
+            )
+
+            D = np.array(
+                undist[
+                    "dist_coeffs"
+                ],
+                dtype=np.float64
+            )
+
+            frame = cv2.undistort(
+                frame,
+                K,
+                D
+            )
+
+        # ----------------------------------------------------
+        # YOLO TRACK
+        # ----------------------------------------------------
+
+        if (
+            frame_idx
+            % max(
+                1,
+                int(
+                    cfg[
+                        "process_every"
+                    ]
+                )
+            )
+            != 0
+        ):
+
+            out.write(frame)
+
+            continue
+
+        try:
+
+            results = model.track(
+                frame,
+                persist=True,
+                tracker=trk[
+                    "tracker_yaml"
+                ],
+                classes=list(
+                    VEHICLE_CLASSES.keys()
+                ),
+                imgsz=cfg[
+                    "imgsz"
+                ],
+                device=cfg[
+                    "device"
+                ],
+                verbose=False
+            )
+
+        except Exception as e:
+
+            print(
+                f"YOLO tracking error: {e}",
+                flush=True
+            )
+
+            out.write(frame)
+
+            continue
+
+        result = results[0]
+
+        boxes = result.boxes
+
+        if (
+            boxes is not None
+            and len(boxes) > 0
+        ):
+
+            xyxy = boxes.xyxy.cpu().numpy()
 
             classes = (
-                boxes.cls
-                .int()
-                .cpu()
-                .tolist()
+                boxes.cls.cpu().numpy()
+                if boxes.cls is not None
+                else []
             )
 
-            coords = (
-                boxes.xyxy
-                .cpu()
-                .numpy()
+            ids = (
+                boxes.id.cpu().numpy()
+                if boxes.id is not None
+                else []
             )
 
-            # ------------------------------------------------
-            # Process every tracked vehicle
-            # ------------------------------------------------
-
-            for (
-                track_id,
-                class_id,
-                box
-            ) in zip(
-                ids,
-                classes,
-                coords
+            for i, box in enumerate(
+                xyxy
             ):
 
-                if class_id not in VEHICLE_CLASSES:
-
+                if len(ids) <= i:
                     continue
 
                 track_id = int(
-                    track_id
+                    ids[i]
                 )
 
-                class_name = (
-                    VEHICLE_CLASSES[
-                        class_id
-                    ]
+                cls_id = int(
+                    classes[i]
                 )
 
-                track_class[
-                    track_id
-                ] = class_name
-
-                track_frames[
-                    track_id
-                ] += 1
+                class_name = VEHICLE_CLASSES.get(
+                    cls_id,
+                    "Vehicle"
+                )
 
                 x1, y1, x2, y2 = box
 
-                # Bottom-center point
-                center_x = (
+                cx = (
                     x1 + x2
-                ) / 2.0
+                ) / 2
 
-                bottom_y = y2
+                cy = (
+                    y1 + y2
+                ) / 2
 
-                point = (
-                    center_x,
-                    bottom_y
+                # ------------------------------------------------
+                # Determine road side.
+                # ------------------------------------------------
+
+                road_side = (
+                    "left"
+                    if cx < width / 2
+                    else "right"
                 )
 
-                # --------------------------------------------
-                # Determine road side
-                # --------------------------------------------
+                if road_side == "left":
 
-                inside_left = (
-                    cv2.pointPolygonTest(
-                        src_road_l,
-                        (
-                            float(center_x),
-                            float(bottom_y)
-                        ),
-                        False
-                    )
-                    >= 0
-                )
-
-                inside_right = (
-                    cv2.pointPolygonTest(
-                        src_road_r,
-                        (
-                            float(center_x),
-                            float(bottom_y)
-                        ),
-                        False
-                    )
-                    >= 0
-                )
-
-                # --------------------------------------------
-                # Transform to BEV
-                # --------------------------------------------
-
-                if inside_left:
-
-                    bev_x, bev_y = to_bev(
+                    bx, by = to_bev(
                         ML,
-                        point
-                    )
-
-                elif inside_right:
-
-                    bev_x, bev_y = to_bev(
-                        MR,
-                        point
+                        (
+                            cx,
+                            cy
+                        )
                     )
 
                 else:
 
-                    # If detection is outside both
-                    # configured road polygons, do not
-                    # calculate speed from it.
-
-                    draw_color = (
-                        255,
-                        255,
-                        255
+                    bx, by = to_bev(
+                        MR,
+                        (
+                            cx,
+                            cy
+                        )
                     )
 
-                    cv2.rectangle(
-                        frame,
-                        (
-                            int(x1),
-                            int(y1)
-                        ),
-                        (
-                            int(x2),
-                            int(y2)
-                        ),
-                        draw_color,
-                        2
-                    )
-
-                    draw_label(
-                        frame,
-                        f"{class_name} #{track_id}",
-                        (
-                            x1,
-                            max(
-                                20,
-                                y1
-                            )
-                        ),
-                        draw_color
-                    )
-
-                    continue
-
-                # --------------------------------------------
-                # Store BEV history
-                # --------------------------------------------
+                # ------------------------------------------------
+                # TRACK HISTORY
+                # ------------------------------------------------
 
                 bev_history[
                     track_id
                 ].append(
                     (
-                        bev_x,
-                        bev_y,
+                        bx,
+                        by,
                         frame_idx
                     )
                 )
 
-                # --------------------------------------------
-                # Calculate speed
-                # --------------------------------------------
-
-                speed = fit_speed_kph(
-                    bev_history[
-                        track_id
-                    ],
-                    dt * process_every,
-                    bev_scale
-                )
-
-                valid_speed = False
-
-                if speed is not None:
-
-                    if (
-                        min_plausible
-                        <= speed
-                        <= max_plausible
-                    ):
-
-                        valid_speed = True
-
-                        speed_smooth[
-                            track_id
-                        ].append(
-                            speed
-                        )
-
-                if speed_smooth[
+                track_frames[
                     track_id
-                ]:
+                ] += 1
 
-                    current_speed = (
-                        sum(
-                            speed_smooth[
-                                track_id
-                            ]
-                        )
-                        / len(
-                            speed_smooth[
-                                track_id
-                            ]
-                        )
-                    )
+                track_class[
+                    track_id
+                ] = class_name
 
-                else:
-
-                    current_speed = 0.0
-
-                # --------------------------------------------
-                # Record speed statistics
-                # --------------------------------------------
+                # ------------------------------------------------
+                # COUNT VEHICLE
+                # ------------------------------------------------
 
                 if (
-                    valid_speed
-                    and track_frames[
-                        track_id
-                    ] >= min_track_frames
-                ):
-
-                    track_kph_sum[
-                        track_id
-                    ] += current_speed
-
-                    track_kph_cnt[
-                        track_id
-                    ] += 1
-
-                    if (
-                        current_speed
-                        > track_max_kph[
-                            track_id
-                        ]
-                    ):
-
-                        track_max_kph[
-                            track_id
-                        ] = current_speed
-
-                # --------------------------------------------
-                # Count vehicles
-                # --------------------------------------------
-
-                if (
-                    cnt_cfg["enabled"]
-                    and track_frames[
-                        track_id
-                    ] >= min_track_frames
+                    cnt_cfg[
+                        "enabled"
+                    ]
                     and track_id
                     not in counted_ids
+                    and track_frames[
+                        track_id
+                    ] >= min_track_frames
                 ):
 
                     counted_ids.add(
@@ -2077,88 +1546,77 @@ def main():
                         class_name
                     ] += 1
 
-                    print(
-                        f"[count] "
-                        f"{class_name} "
-                        f"#{track_id}"
-                    )
+                # ------------------------------------------------
+                # SPEED
+                # ------------------------------------------------
 
-                # --------------------------------------------
-                # Alert
-                # --------------------------------------------
-
-                if (
-                    alert_cfg["enabled"]
-                    and valid_speed
-                    and current_speed
-                    >= float(
-                        alert_cfg[
-                            "speed_kph_threshold"
-                        ]
-                    )
-                    and track_id
-                    not in alerted_ids
-                    and track_frames[
+                speed = fit_speed_kph(
+                    bev_history[
                         track_id
-                    ] >= min_track_frames
-                ):
+                    ],
+                    dt,
+                    bev_scale
+                )
 
-                    alerted_ids.add(
-                        track_id
+                display_speed = None
+
+                if speed is not None:
+
+                    if (
+                        min_plausible
+                        <= speed
+                        <= max_plausible
+                    ):
+
+                        speed_smooth[
+                            track_id
+                        ].append(
+                            speed
+                        )
+
+                        display_speed = (
+                            sum(
+                                speed_smooth[
+                                    track_id
+                                ]
+                            )
+                            /
+                            len(
+                                speed_smooth[
+                                    track_id
+                                ]
+                            )
+                        )
+
+                        track_kph_sum[
+                            track_id
+                        ] += display_speed
+
+                        track_kph_cnt[
+                            track_id
+                        ] += 1
+
+                        track_max_kph[
+                            track_id
+                        ] = max(
+                            track_max_kph[
+                                track_id
+                            ],
+                            display_speed
+                        )
+
+                # ------------------------------------------------
+                # DRAW
+                # ------------------------------------------------
+
+                draw_color = (
+                    speed_color(
+                        display_speed,
+                        green_kph,
+                        yellow_kph
                     )
-
-                    event = {
-
-                        "timestamp":
-                            datetime.now().strftime(
-                                "%Y-%m-%d %H:%M:%S"
-                            ),
-
-                        "track_id":
-                            track_id,
-
-                        "class":
-                            class_name,
-
-                        "kph":
-                            current_speed,
-                    }
-
-                    crop_name = save_snapshot(
-                        alert_cfg,
-                        frame,
-                        box,
-                        event
-                    )
-
-                    log_alert(
-                        alert_cfg[
-                            "log_path"
-                        ],
-                        event,
-                        crop_name
-                    )
-
-                    send_alert(
-                        alert_cfg,
-                        event
-                    )
-
-                    print(
-                        f"[ALERT] "
-                        f"{class_name} "
-                        f"#{track_id} "
-                        f"{current_speed:.1f} km/h"
-                    )
-
-                # --------------------------------------------
-                # Draw vehicle
-                # --------------------------------------------
-
-                color = speed_color(
-                    current_speed,
-                    green_kph,
-                    yellow_kph
+                    if display_speed is not None
+                    else (255, 255, 255)
                 )
 
                 cv2.rectangle(
@@ -2171,16 +1629,16 @@ def main():
                         int(x2),
                         int(y2)
                     ),
-                    color,
+                    draw_color,
                     2
                 )
 
-                if current_speed > 0:
+                if display_speed is not None:
 
                     label = (
                         f"{class_name} "
                         f"#{track_id} "
-                        f"{current_speed:.1f} km/h"
+                        f"{display_speed:.1f} km/h"
                     )
 
                 else:
@@ -2196,168 +1654,191 @@ def main():
                     (
                         x1,
                         max(
-                            20,
+                            25,
                             y1
                         )
                     ),
-                    color
+                    draw_color
                 )
 
-            # ------------------------------------------------
-            # Draw processing information
-            # ------------------------------------------------
+                # ------------------------------------------------
+                # SPEEDING ALERT
+                # ------------------------------------------------
 
-            cv2.putText(
-                frame,
-                f"Frame: {frame_idx}",
-                (
-                    15,
-                    30
-                ),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (
-                    255,
-                    255,
-                    255
-                ),
-                2,
-                cv2.LINE_AA
-            )
+                alert_threshold = alert_cfg.get(
+                    "speed_kph_threshold",
+                    100
+                )
 
-            cv2.putText(
-                frame,
-                (
-                    f"Vehicles: "
-                    f"{len(track_frames)}"
-                ),
-                (
-                    15,
-                    60
-                ),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (
-                    255,
-                    255,
-                    255
-                ),
-                2,
-                cv2.LINE_AA
-            )
+                if (
+                    alert_cfg.get(
+                        "enabled",
+                        False
+                    )
+                    and display_speed is not None
+                    and display_speed
+                    >= alert_threshold
+                    and track_id
+                    not in alerted_ids
+                ):
 
-            # ------------------------------------------------
-            # Write processed video
-            # ------------------------------------------------
+                    alerted_ids.add(
+                        track_id
+                    )
 
-            out.write(
+                    timestamp = datetime.now().strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+
+                    event = {
+                        "timestamp": timestamp,
+                        "track_id": track_id,
+                        "class": class_name,
+                        "kph": display_speed
+                    }
+
+                    snapshot = save_snapshot(
+                        alert_cfg,
+                        original_frame,
+                        box,
+                        event
+                    )
+
+                    log_alert(
+                        alert_cfg[
+                            "log_path"
+                        ],
+                        event,
+                        snapshot
+                    )
+
+                    send_alert(
+                        alert_cfg,
+                        event
+                    )
+
+        # ----------------------------------------------------
+        # STATUS
+        # ----------------------------------------------------
+
+        cv2.putText(
+            frame,
+            "Webazi Traffic Watch",
+            (
+                20,
+                35
+            ),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.9,
+            (0, 255, 0),
+            2,
+            cv2.LINE_AA
+        )
+
+        cv2.putText(
+            frame,
+            f"Vehicles: {len(counted_ids)}",
+            (
+                20,
+                70
+            ),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (255, 255, 255),
+            2,
+            cv2.LINE_AA
+        )
+
+        # ----------------------------------------------------
+        # WRITE OUTPUT
+        # ----------------------------------------------------
+
+        out.write(frame)
+
+        # ----------------------------------------------------
+        # DISPLAY
+        # ----------------------------------------------------
+
+        if cfg.get(
+            "display",
+            False
+        ):
+
+            cv2.imshow(
+                "Webazi Traffic Watch",
                 frame
             )
 
-            # ------------------------------------------------
-            # Optional display
-            # ------------------------------------------------
-
-            if cfg.get(
-                "display",
-                False
-            ):
-
-                cv2.imshow(
-                    "Webazi Vehicle Speed Tracker",
-                    frame
-                )
-
-                key = (
-                    cv2.waitKey(1)
-                    & 0xFF
-                )
-
-                if key == ord("q"):
-
-                    print(
-                        "Stopped by user."
-                    )
-
-                    break
-
-            # ------------------------------------------------
-            # Periodic CSV flush
-            # ------------------------------------------------
-
             if (
-                time.time()
-                - last_log_flush
-                >= LOG_FLUSH_EVERY_S
-            ):
+                cv2.waitKey(1)
+                & 0xFF
+            ) == ord("q"):
 
-                write_speed_log()
-
-                write_counts_log()
-
-                last_log_flush = time.time()
-
-    finally:
+                break
 
         # ----------------------------------------------------
-        # Final CSV write
+        # PERIODIC LOG FLUSH
         # ----------------------------------------------------
 
-        print(
-            "Writing final results..."
-        )
+        if (
+            time.time()
+            - last_log_flush
+            >= LOG_FLUSH_EVERY_S
+        ):
 
-        write_speed_log()
+            write_speed_log()
+            write_counts_log()
 
-        write_counts_log()
+            last_log_flush = time.time()
 
-        # ----------------------------------------------------
-        # Release video
-        # ----------------------------------------------------
+            print(
+                f"Processed frame "
+                f"{frame_idx}"
+                + (
+                    f"/{total}"
+                    if total
+                    else ""
+                ),
+                flush=True
+            )
 
-        cap.release()
+    # ========================================================
+    # CLEANUP
+    # ========================================================
 
-        out.release()
+    cap.release()
 
-        cv2.destroyAllWindows()
+    out.release()
 
-        print(
-            "============================================================"
-        )
+    cv2.destroyAllWindows()
 
-        print(
-            "Vehicle tracking finished."
-        )
+    # Final logs
 
-        print(
-            f"Processed video: "
-            f"{fallback_video_out}"
-        )
+    write_speed_log()
+    write_counts_log()
 
-        print(
-            f"Speed results: "
-            f"{cfg['log']}"
-        )
+    print("=" * 60, flush=True)
+    print(
+        "VIDEO PROCESSING COMPLETE",
+        flush=True
+    )
+    print(
+        f"Processed video: "
+        f"{fallback_video_out}",
+        flush=True
+    )
+    print(
+        f"Speed log: "
+        f"{cfg['log']}",
+        flush=True
+    )
+    print(
+        f"Counts log: "
+        f"{cnt_cfg['csv_path']}",
+        flush=True
+    )
+    print("=" * 60, flush=True)
 
-        print(
-            f"Vehicle counts: "
-            f"{cnt_cfg['csv_path']}"
-        )
-
-        print(
-            f"Snapshots: "
-            f"{alert_cfg['snapshot_dir']}"
-        )
-
-        print(
-            "============================================================"
-        )
-
-
-# ============================================================
-# Entry point
-# ============================================================
 
 if __name__ == "__main__":
-
     main()
